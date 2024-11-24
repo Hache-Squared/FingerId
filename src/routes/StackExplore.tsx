@@ -26,29 +26,19 @@ export const StackExplore = () => {
   return (
     <Stack.Navigator
     screenOptions={{
-      headerShown: false,
-      headerTitleAlign: 'center',
-      headerTitleStyle: {
-        color: screens.titleColor,
-      },
-      
-      headerStyle: {
-          elevation: 0,
-          borderColor: 'transparent',
-          shadowColor: 'transparent',
-          backgroundColor: secondaryColor,
-      },
-      cardStyle: {
-        backgroundColor: screens.secondaryColor,
-
-      },
+      headerShown: false,    
+   
     
     }}
     >
-      <Stack.Screen name="Register" component={RegisterUserScreen} />
-      <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />
       <Stack.Screen name="LoginUserScreen" component={LoginUserScreen} />
+      <Stack.Screen name="Register" component={RegisterUserScreen} />
       <Stack.Screen name="ExploreContent" options={{title: 'Explorar Contenido'}} component={ExploreContentScreen} />
+      <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />
+      
+      
+      
+      
 
       
     </Stack.Navigator>

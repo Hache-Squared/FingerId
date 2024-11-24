@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useAppTheme, useExploreStore, useFingerId, useLocalStorage } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CameraView } from '../views/CameraView';
@@ -54,7 +54,7 @@ const RegisterUserScreen = () => {
         Alert.alert("Error al guardar")
         return;
       }
-      navigation.navigate("ExploreContent")
+      navigation.goBack();
 
     }
   }
@@ -94,8 +94,9 @@ const RegisterUserScreen = () => {
             />
           
         </View>
+        {photo && <Image source={{ uri: `file://${photo.path}` }} style={styles.image} />}
         <View className='w-11/12 self-center  rounded-lg p-3'>
-          <Text className='font-bold text-lg text-black text-center'>Foto</Text>
+        
           <TouchableOpacity 
             onPress={() => {
               setOpenModal(true)
@@ -124,36 +125,7 @@ const RegisterUserScreen = () => {
                 Generar Usuario
             </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-            onPress={()=> navigation.navigate("LoginUserScreen")} 
-            className='w-10/12 rounded-full m-2 p-2 self-center'
-            style={{backgroundColor: primaryColor}}
-            >
-            <Text 
-            className='text-lg text-center'
-            style={{
-                color: secondaryColor,
-                fontWeight: 'bold'
-            }}
-            >
-                Login
-            </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-            onPress={()=> navigation.navigate("ExploreContent")} 
-            className='w-10/12 rounded-full m-2 p-2 self-center'
-            style={{backgroundColor: primaryColor}}
-            >
-            <Text 
-            className='text-lg text-center'
-            style={{
-                color: secondaryColor,
-                fontWeight: 'bold'
-            }}
-            >
-                Usuarios
-            </Text>
-        </TouchableOpacity>
+        
       </>
       
 
@@ -177,6 +149,18 @@ const RegisterUserScreen = () => {
   )
 }
 
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white'
+  },
+  image: {
+    
+    width: Dimensions.get("screen").width*0.9,
+    height: 250,
+    alignSelf: 'center',
+    // marginTop: 20,
+  },
+});
 
 export { RegisterUserScreen }

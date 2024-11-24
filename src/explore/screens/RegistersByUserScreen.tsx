@@ -9,8 +9,8 @@ import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManage
 
 const RegistersByUserScreen = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
-  const { backpackList, startLoadingBackpackList, isLoadingExplore, isUserAdmin } = useExploreStore();
   const { getPhotos } = usePhotoManagement()
+  const { primaryColor } = useAppTheme()
   const [data, setData] = useState<PhotoInfo[]>([]);
   const { id } = useRoute<RouteProp<StackExploreParams, 'RegistersByUser'>>().params;
   useEffect(() => {
@@ -27,20 +27,21 @@ const RegistersByUserScreen = () => {
 
   return (
     <>
-     <View className='w-full flex-1 bg-red-500'>
-      <Text className=''>Hola contenido </Text>
+     <View className='w-full flex-1 bg-white'>
+     <Text className='font-bold text-center text-xl' style={{color: primaryColor}}>Entradas y salidas</Text>
+      <View className='my-2'/>
       <FlatList
         data={data}
         renderItem={({item, index}) => {
           return(
-            <View className='w-full flex flex-row items-center justify-center' key={index}>
+            <View className='w-11/12 bg-gray-100 self-center rounded-md my-0.5 flex flex-row items-center justify-center' key={index}>
               
               <Image 
                 source={{ uri: `file://${item.path}` }} 
                 style={styles.image} />
               
               <View className='flex-1'>
-                <Text className='m-2 font-bold text-base'>Fecha: {new Date(item.createdAt).toISOString()}</Text>
+                <Text style={{color: primaryColor}} className='m-2 font-bold text-base'>Fecha: {new Date(item.createdAt).toISOString()}</Text>
               </View>
 
             </View>
@@ -60,6 +61,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     alignSelf: 'center',
+    borderRadius: 5
     // marginTop: 20,
   },
 });

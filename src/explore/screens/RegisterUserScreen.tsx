@@ -9,7 +9,7 @@ const RegisterUserScreen = () => {
   const [userName, setUserName] = useState<string>('')
   const [UserId, setUserId] = useState<string>('')
   const { startLoginUser } = useExploreStore()
-  const { authenticateUser } = useFingerId()
+  const { authenticateUser} = useFingerId()
   const validateFields = () => {
     const trimmedUserNameText = userName.trim();
     const trimmedUserIdText = UserId.trim();
@@ -70,6 +70,7 @@ const RegisterUserScreen = () => {
           <TouchableOpacity 
             onPress={() => {
               authenticateUser()
+              
             }} 
             className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
             style={{backgroundColor: primaryColor}}

@@ -3,24 +3,15 @@ import { Alert, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, Vie
 import { useAppTheme, useExploreStore, useFingerId, useLocalStorage } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CameraView } from '../views/CameraView';
-import { PhotoData, usePhotoManagement } from '../../shared/hooks/usePhotoManagement';
-import { usePhotoManagementWithStorage } from '../../shared/hooks/usePhotoManagementWithStorage';
-import { PhotoFile } from 'react-native-vision-camera';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { StackExploreParams } from '../../routes/StackExplore';
 
-const RegisterUserScreen = () => {
+const LoginUserScreen = () => {
   const { texts, primaryColor, secondaryColor, screens } = useAppTheme()
-  const navigation = useNavigation<NavigationProp<StackExploreParams>>()
+  
   const [userName, setUserName] = useState<string>('')
   const [UserId, setUserId] = useState<string>('')
-  const [photo, setPhoto] = useState<PhotoFile | null>(null)
   const [openModal, setOpenModal] = useState(false)
   const { startLoginUser } = useExploreStore()
   const { authenticateUser} = useFingerId()
-  const { saveProfilePhoto,  } = usePhotoManagement() 
-  const { saveUserData } = usePhotoManagementWithStorage()
-
   const validateFields = () => {
     const trimmedUserNameText = userName.trim();
     const trimmedUserIdText = UserId.trim();
@@ -37,18 +28,9 @@ const RegisterUserScreen = () => {
 
     return true;
   };
-  const handleLogin = async() => {
-    if (validateFields() && photo) {
-      const res = await saveUserData(UserId,{
-        userName,
-        UserId
-      }, photo)
-      if(!res){
-        Alert.alert("Error al guardar")
-        return;
-      }
-      navigation.navigate("ExploreContent")
-
+  const handleLogin = () => {
+    if (validateFields()) {
+      
     }
   }
 
@@ -88,10 +70,10 @@ const RegisterUserScreen = () => {
           
         </View>
         <View className='w-11/12 self-center  rounded-lg p-3'>
-          <Text className='font-bold text-lg text-black text-center'>Foto</Text>
+          <Text className='font-bold text-lg text-black text-center'>Huella</Text>
           <TouchableOpacity 
             onPress={() => {
-              setOpenModal(true)
+              authenticateUser()
               
             }} 
             className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
@@ -125,12 +107,11 @@ const RegisterUserScreen = () => {
       <Modal visible={openModal} onRequestClose={() => setOpenModal(false)}>
             <View className='flex-1 '>
             <CameraView
-              onConfirmPhoto={(photo) => {
-                console.log(photo);
-                setPhoto(photo)
-                setOpenModal(false)
-                
-              }}
+            onConfirmPhoto={(photo) => {
+              console.log(photo);
+              setOpenModal(false)
+              
+            }}
             />
             </View>
       </Modal>
@@ -142,4 +123,4 @@ const RegisterUserScreen = () => {
 
 
 
-export { RegisterUserScreen }
+export { LoginUserScreen }

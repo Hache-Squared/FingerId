@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useAppTheme, useExploreStore, useFingerId, useLocalStorage } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
+import { CameraView } from '../views/CameraView';
 
 const RegisterUserScreen = () => {
   const { texts, primaryColor, secondaryColor, screens } = useAppTheme()
@@ -31,6 +32,8 @@ const RegisterUserScreen = () => {
       
     }
   }
+
+  return <CameraView/>;
 
   return (
 

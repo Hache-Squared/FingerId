@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect } from 'react';
 import RNFS from 'react-native-fs';
 import { PhotoFile } from 'react-native-vision-camera';
@@ -90,7 +91,7 @@ export const usePhotoManagement = () => {
             }
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const fileName = `${photoData.id}-${timestamp}.jpg`;
+            const fileName = `${photoData.id}_${timestamp}.jpg`;
             const destinationPath = `${folderPath}/${fileName}`;
 
             await RNFS.copyFile(photoData.path, destinationPath);
@@ -168,7 +169,7 @@ export const usePhotoManagement = () => {
             const files = await RNFS.readDir(folderPath);
 
             return files.map((file) => ({
-                id: file.name.split('-')[0],
+                id: file.name.split('_')[0],
                 name: file.name,
                 path: file.path,
                 createdAt: file.mtime,
@@ -178,14 +179,15 @@ export const usePhotoManagement = () => {
             return [];
         }
     };
-    const listUsersWithProfilePhotos = async (): Promise<{ userId: string; profilePhoto: PhotoInfo | null }[]> => {
+    const listUsersWithProfilePhotos = async (): Promise<{ userId: string; userName: string; profilePhoto: PhotoInfo | null }[]> => {
         try {
             const userFolders = await RNFS.readDir(usersPath);
             const usersWithPhotos = await Promise.all(
                 userFolders.map(async (folder) => {
                     const userId = folder.name;
                     const profilePhoto = await getProfilePhoto(userId);
-                    return { userId, profilePhoto };
+                    const data = await getUserData(userId);
+                    return { userId, profilePhoto, userName: (data?.userName || "") };
                 })
             );
 
@@ -195,6 +197,71 @@ export const usePhotoManagement = () => {
             return [];
         }
     };
+    const saveUserData = async (userId: string, userData: object, profilePhoto: PhotoFile): Promise<boolean> => {
+        try {
+            // Guardar la foto de perfil
+            const res = await createUserFolders(userId)
+            if(!res){
+              console.log('Error generando directorios');
+              return false;
+            }
+            const photoSaved = await saveProfilePhoto(userId, profilePhoto);
+            if (!photoSaved) {
+                console.log('No se pudo guardar la foto de perfil');
+                return false;
+            }
+    
+            // Guardar los datos del usuario en AsyncStorage
+            const existingData = await AsyncStorage.getItem('users');
+            const users = existingData ? JSON.parse(existingData) : {};
+    
+            users[userId] = { ...users[userId], ...userData };
+            await AsyncStorage.setItem('users', JSON.stringify(users));
+    
+            console.log(`Datos del usuario ${userId} guardados en AsyncStorage junto con su foto de perfil`);
+            return true;
+        } catch (error) {
+            console.log('Error al guardar los datos del usuario en AsyncStorage:', error);
+            return false;
+        }
+    };
+    
+      const getUserData = async (userId: string): Promise<{ userId: string; userName: string; } | null> => {
+          try {
+              const existingData = await AsyncStorage.getItem('users');
+              const users = existingData ? JSON.parse(existingData) : {};
+    
+              return users[userId] || null;
+          } catch (error) {
+              console.log('Error al obtener los datos del usuario de AsyncStorage:', error);
+              return null;
+          }
+      };
+    
+    
+      
+    const getUsers = async (): Promise<{ userId: string; userName: string; }[]> => {
+        try {
+            const existingData = await AsyncStorage.getItem('users');
+            if (!existingData) {
+                console.log('No se encontraron usuarios en AsyncStorage');
+                return [];
+            }
+    
+            const users = JSON.parse(existingData);
+            let arr = Object.keys(users).map((userId) => ({
+                ...users[userId],
+            }));
+
+            console.log({arr});
+            return arr;
+            
+        } catch (error) {
+            console.log('Error al obtener todos los usuarios de AsyncStorage:', error);
+            return [];
+        }
+    };
+    
 
     return {
         createUserFolders,
@@ -203,5 +270,8 @@ export const usePhotoManagement = () => {
         getProfilePhoto,
         getPhotos,
         listUsersWithProfilePhotos,
+        getUserData,
+        saveUserData,
+        getUsers
     };
 };

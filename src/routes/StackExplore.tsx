@@ -4,14 +4,17 @@ import { useAppTheme } from '../shared/hooks';
 import { HeaderLeftGradient, HeaderLogo } from '../shared/components';
 import { BookListItem } from '../types';
 import { RegisterUserScreen } from '../explore/screens/RegisterUserScreen';
+import { LoginUserScreen } from '../explore/screens/LoginUserScreen';
+import { RegistersByUserScreen } from '../explore/screens/RegistersByUserScreen';
 
 export type StackExploreParams = {
   ExploreContent: undefined,
    
-  Backpack: {
+  RegistersByUser: {
     id: string,
   },
   Register: undefined,
+  LoginUserScreen: undefined
 }
 
 
@@ -43,6 +46,8 @@ export const StackExplore = () => {
     }}
     >
       <Stack.Screen name="Register" component={RegisterUserScreen} />
+      <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />
+      <Stack.Screen name="LoginUserScreen" component={LoginUserScreen} />
       <Stack.Screen name="ExploreContent" options={{title: 'Explorar Contenido'}} component={ExploreContentScreen} />
 
       

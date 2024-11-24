@@ -1,4 +1,4 @@
-import { NavigationProp, useNavigation } from '@react-navigation/native'
+import { NavigationProp, RouteProp, useNavigation, useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { Alert, Button, Dimensions, FlatList, Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StackExploreParams } from '../../routes/StackExplore'
@@ -7,18 +7,21 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { usePhotoManagementWithStorage } from '../../shared/hooks/usePhotoManagementWithStorage'
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
 
-const ExploreContentScreen = () => {
+const RegistersByUserScreen = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   const { backpackList, startLoadingBackpackList, isLoadingExplore, isUserAdmin } = useExploreStore();
-  const { listUsersWithProfilePhotos } = usePhotoManagement()
-  const [data, setData] = useState<{ userId: string;userName: string; profilePhoto: PhotoInfo | null }[]>([]);
+  const { getPhotos } = usePhotoManagement()
+  const [data, setData] = useState<PhotoInfo[]>([]);
+  const { id } = useRoute<RouteProp<StackExploreParams, 'RegistersByUser'>>().params;
   useEffect(() => {
     
     handleGetData()
   }, [])
   const handleGetData = async() => {
-    const d = await listUsersWithProfilePhotos()
+    const d = await getPhotos(id,"fotosHistorial" )
     setData(d)
+    console.log(d);
+    
   }
  
 
@@ -30,23 +33,17 @@ const ExploreContentScreen = () => {
         data={data}
         renderItem={({item, index}) => {
           return(
-            <TouchableOpacity onPress={() => {
-              navigation.navigate("RegistersByUser", {
-                id: item.userId
-              })
-            }} className='w-full flex flex-row items-center justify-center' key={index}>
+            <View className='w-full flex flex-row items-center justify-center' key={index}>
               
               <Image 
-                source={{ uri: `file://${item.profilePhoto?.path}` }} 
+                source={{ uri: `file://${item.path}` }} 
                 style={styles.image} />
               
               <View className='flex-1'>
-                <Text className='m-2 font-bold text-xl'>ID: {item.userId}</Text>
-                <Text className='m-2 font-bold text-base'>Nombre: {item.userName}</Text>
+                <Text className='m-2 font-bold text-base'>Fecha: {new Date(item.createdAt).toISOString()}</Text>
               </View>
-              
 
-            </TouchableOpacity>
+            </View>
             
           )
         }}
@@ -66,4 +63,4 @@ const styles = StyleSheet.create({
     // marginTop: 20,
   },
 });
-export  { ExploreContentScreen }
+export  { RegistersByUserScreen }

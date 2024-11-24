@@ -13,17 +13,15 @@ const RegisterUserScreen = () => {
   const { texts, primaryColor, secondaryColor, screens } = useAppTheme()
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   const [userName, setUserName] = useState<string>('')
-  const [UserId, setUserId] = useState<string>('')
+  const [userId, setUserId] = useState<string>('')
   const [photo, setPhoto] = useState<PhotoFile | null>(null)
   const [openModal, setOpenModal] = useState(false)
-  const { startLoginUser } = useExploreStore()
-  const { authenticateUser} = useFingerId()
-  const { saveProfilePhoto,  } = usePhotoManagement() 
-  const { saveUserData } = usePhotoManagementWithStorage()
+
+  const { saveUserData, getUsers } = usePhotoManagement()
 
   const validateFields = () => {
     const trimmedUserNameText = userName.trim();
-    const trimmedUserIdText = UserId.trim();
+    const trimmedUserIdText = userId.trim();
 
     if (!trimmedUserNameText) {
       Alert.alert('Error', 'El campo de nombre no puede estar vacío o contener solo espacios en blanco.');
@@ -39,9 +37,18 @@ const RegisterUserScreen = () => {
   };
   const handleLogin = async() => {
     if (validateFields() && photo) {
-      const res = await saveUserData(UserId,{
+      const currentUsers = await getUsers()
+      
+      let index = currentUsers.findIndex(x => x.userId === userId);
+      
+      if(index !== -1){
+        Alert.alert("Error","Error, el usuario ya existe") 
+        return;
+      }
+
+      const res = await saveUserData(userId,{
         userName,
-        UserId
+        userId
       }, photo)
       if(!res){
         Alert.alert("Error al guardar")
@@ -80,7 +87,7 @@ const RegisterUserScreen = () => {
           <TextInput
             className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
             style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
-            value={UserId}
+            value={userId}
             placeholder='Matrícula de alumno'
             placeholderTextColor={primaryColor}
             onChangeText={(text) => setUserId(text)}
@@ -115,6 +122,36 @@ const RegisterUserScreen = () => {
             }}
             >
                 Generar Usuario
+            </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+            onPress={()=> navigation.navigate("LoginUserScreen")} 
+            className='w-10/12 rounded-full m-2 p-2 self-center'
+            style={{backgroundColor: primaryColor}}
+            >
+            <Text 
+            className='text-lg text-center'
+            style={{
+                color: secondaryColor,
+                fontWeight: 'bold'
+            }}
+            >
+                Login
+            </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+            onPress={()=> navigation.navigate("ExploreContent")} 
+            className='w-10/12 rounded-full m-2 p-2 self-center'
+            style={{backgroundColor: primaryColor}}
+            >
+            <Text 
+            className='text-lg text-center'
+            style={{
+                color: secondaryColor,
+                fontWeight: 'bold'
+            }}
+            >
+                Usuarios
             </Text>
         </TouchableOpacity>
       </>

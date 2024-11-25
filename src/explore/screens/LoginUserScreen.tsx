@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useAppTheme, useExploreStore, useFingerId } from '../../shared/hooks'
+import { useAppTheme, useFingerId } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CameraView } from '../views/CameraView';
 import { PhotoData, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'; 
@@ -103,6 +103,7 @@ const LoginUserScreen = () => {
         </TouchableOpacity>
       </View>
       <Text className='w-full text-center font-bold text-black text-2xl'>Bienvenido a Checker</Text>
+      <Text className='w-full text-center font-bold text-black text-2xl'>Equipo: 2</Text>
        
       <>
          

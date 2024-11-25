@@ -6,13 +6,14 @@ import { useAppTheme, useBackpackStore, useExploreStore } from '../../shared/hoo
 import Icon from 'react-native-vector-icons/Ionicons';
 import { usePhotoManagementWithStorage } from '../../shared/hooks/usePhotoManagementWithStorage'
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
+import { useSecurity } from '../../shared/hooks/useSecurity'
 
 const ExploreContentScreen = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   const { primaryColor } = useAppTheme()
   const { listUsersWithProfilePhotos } = usePhotoManagement()
   const [data, setData] = useState<{ userId: string;userName: string; profilePhoto: PhotoInfo | null }[]>([]);
-   
+  const { isLocked, startLockingState } = useSecurity();
   useFocusEffect(
     React.useCallback(() => {
       // Do something when the screen is focused
@@ -22,12 +23,15 @@ const ExploreContentScreen = () => {
         // Useful for cleanup functions
       };
     }, []))
-    
+
   const handleGetData = async() => {
     const d = await listUsersWithProfilePhotos()
     setData(d)
   }
  
+  // if( isLocked ){
+  //   navigation.navigate("LoginUserScreen")
+  // }
 
   return (
     <>
@@ -61,9 +65,14 @@ const ExploreContentScreen = () => {
 
       />
      </View>
+     <TouchableOpacity onPress={() => startLockingState()} className='w-[60px] h-[60px] absolute flex items-center justify-center bottom-10 left-8 p-2 rounded-full bg-gray-200'>
+        <Icon name='lock-closed-outline' size={40} color={"#111"} />
+      </TouchableOpacity>
+
      <TouchableOpacity onPress={() => navigation.navigate("Register")} className='w-[60px] h-[60px] absolute flex items-center justify-center bottom-10 right-8 p-2 rounded-full bg-gray-200'>
         <Icon name='add-circle-outline' size={40} color={"#111"} />
       </TouchableOpacity>
+
     </>
   )
 }

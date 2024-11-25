@@ -6,6 +6,7 @@ import { BookListItem } from '../types';
 import { RegisterUserScreen } from '../explore/screens/RegisterUserScreen';
 import { LoginUserScreen } from '../explore/screens/LoginUserScreen';
 import { RegistersByUserScreen } from '../explore/screens/RegistersByUserScreen';
+import { useSecurity } from '../shared/hooks/useSecurity';
 
 export type StackExploreParams = {
   ExploreContent: undefined,
@@ -22,7 +23,7 @@ const Stack = createStackNavigator<StackExploreParams>();
 
 export const StackExplore = () => {
   const { screens, secondaryColor } = useAppTheme()
-
+  const { isLocked, startLockingState } = useSecurity();
   return (
     <Stack.Navigator
     screenOptions={{
@@ -31,10 +32,18 @@ export const StackExplore = () => {
     
     }}
     >
-      <Stack.Screen name="LoginUserScreen" component={LoginUserScreen} />
-      <Stack.Screen name="Register" component={RegisterUserScreen} />
-      <Stack.Screen name="ExploreContent" options={{title: 'Explorar Contenido'}} component={ExploreContentScreen} />
-      <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />
+      {
+        isLocked ? (
+          <Stack.Screen name="LoginUserScreen" component={LoginUserScreen} />
+        ) : (
+          <>
+          <Stack.Screen name="ExploreContent" options={{title: 'Explorar Contenido'}} component={ExploreContentScreen} />
+          <Stack.Screen name="Register" component={RegisterUserScreen} />
+          <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />
+          </>    
+          
+        )
+      }
       
       
       

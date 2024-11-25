@@ -3,6 +3,7 @@ import { backpackSlice, notebookSlice } from "./explore";
 import { exploreSlice } from "./explore/exploreSlice";
 import { permissionsSlice } from "./permissions";
 import { appThemeSlice } from "./profile/appThemeSlice";
+import { securitySlice } from "./explore/securitySlice";
 
 
 export const store = configureStore({
@@ -12,6 +13,7 @@ export const store = configureStore({
         explore: exploreSlice.reducer,
         appTheme: appThemeSlice.reducer,
         permissions: permissionsSlice.reducer,
+        security: securitySlice.reducer
     },
     // middleware: (getDefaultMiddleware) => getDefaultMiddleware({
     //     serializableCheck: false

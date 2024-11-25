@@ -3,8 +3,6 @@ import React, { useEffect, useState } from 'react'
 import { Alert, Button, Dimensions, FlatList, Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StackExploreParams } from '../../routes/StackExplore'
 import { useAppTheme, useBackpackStore, useExploreStore } from '../../shared/hooks'
-import Icon from 'react-native-vector-icons/Ionicons';
-import { usePhotoManagementWithStorage } from '../../shared/hooks/usePhotoManagementWithStorage'
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
 
 const RegistersByUserScreen = () => {
@@ -23,6 +21,30 @@ const RegistersByUserScreen = () => {
     console.log(d);
     
   }
+  const formatAttendanceDate = (dateParam: any): string => {
+    const date = new Date(dateParam)
+    const daysOfWeek = [
+        'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'
+    ];
+    const months = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const dayOfWeek = daysOfWeek[date.getDay()];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+
+    return `${dayOfWeek}, ${day} de ${month} de ${year}, ${formattedHours}:${formattedMinutes} ${period}`;
+};
+
  
 
   return (
@@ -41,7 +63,7 @@ const RegistersByUserScreen = () => {
                 style={styles.image} />
               
               <View className='flex-1'>
-                <Text style={{color: primaryColor}} className='m-2 font-bold text-base'>Fecha: {new Date(item.createdAt).toISOString()}</Text>
+                <Text style={{color: primaryColor}} className='m-2 font-bold text-base'>Fecha: {formatAttendanceDate(item.createdAt)}</Text>
               </View>
 
             </View>

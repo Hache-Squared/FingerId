@@ -8,15 +8,20 @@ import { usePhotoManagementWithStorage } from '../../shared/hooks/usePhotoManage
 import { PhotoFile } from 'react-native-vision-camera';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StackExploreParams } from '../../routes/StackExplore';
+import { useSecurity } from '../../shared/hooks/useSecurity';
 
 const LoginUserScreen = () => {
   const { primaryColor, secondaryColor } = useAppTheme()
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   const [userId, setUserId] = useState<string>('')
+  const [superPass, setSuperPass] = useState<string>('')
   const [photo, setPhoto] = useState<PhotoFile | null>(null)
   const [openModal, setOpenModal] = useState(false)
- 
+  const [openSuperModal, setOpenSuperModal] = useState(false)
+  const [openSuccessModal, setOpenSuccessModal] = useState(false)
   const { savePhoto, getUsers} = usePhotoManagement()
+  const {isLocked, startUnlockingState, startUsingSuperPass} = useSecurity()
+
 
   const validateFields = () => {
   
@@ -29,6 +34,7 @@ const LoginUserScreen = () => {
 
     return true;
   };
+
   const handleLogin = async() => {
     if (validateFields() && photo) {
       const currentUsers = await getUsers()
@@ -47,10 +53,43 @@ const LoginUserScreen = () => {
         Alert.alert("Error al guardar")
         return;
       }
-      navigation.navigate("ExploreContent")
+      handleCleanFields()
+      //navigation.navigate("ExploreContent")
 
     }
   }
+
+  const handleAuth = async() => {
+    const res = await startUnlockingState();
+    if(!res){
+      //Alert.alert("Error", "Usar contraseña")
+      //navigation.navigate("ExploreContent");
+      setOpenSuperModal(true)
+    }
+  }
+
+  const handleSuperPass = async() =>{
+    if(superPass === "master"){
+      await startUsingSuperPass()
+    }else{
+      
+      Alert.alert("Error", "Contraseña invalida")
+    }
+  }
+
+  const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+  const handleCleanFields = async() => {
+    
+    setOpenSuccessModal(true)
+    await delay(2000);
+    setOpenSuccessModal(false)
+    setUserId("")
+    setSuperPass("")
+    setPhoto(null)
+
+  }
+
 
   // return ;
 
@@ -60,8 +99,8 @@ const LoginUserScreen = () => {
       className='flex-1 w-full justify-center self-center bg-white '>
 
       <View className='w-5/6 self-center flex flex-row items-center justify-end bg-red-00 ' >
-        <TouchableOpacity onPress={() => null} className='p-2 rounded-full bg-gray-200'>
-          <Icon name='key-outline' size={30} color={"#111"} className='mx-4'/>
+        <TouchableOpacity onPress={() => handleAuth()} className='p-2 rounded-full bg-gray-200'>
+          <Icon name='lock-open-outline' size={30} color={"#111"} className='mx-4'/>
         </TouchableOpacity>
       </View>
       <Text className='w-full text-center font-bold text-black text-2xl'>Bienvenido a Checker</Text>
@@ -126,6 +165,69 @@ const LoginUserScreen = () => {
                 
               }}
             />
+            </View>
+      </Modal>
+
+      <Modal visible={openSuperModal} 
+        onRequestClose={() => {
+          setSuperPass("")
+          setOpenSuperModal(false)
+        }}>
+            <View className='flex-1 my-3 flex items-center justify-center'>
+            <Text className='w-full text-center font-bold text-black text-2xl'>Ingresar como super usuario</Text>
+            <View className='w-11/12 self-center  rounded-lg p-3'>
+                <Text className='font-bold text-lg text-black text-center'>Contraseña:</Text>
+                <TextInput
+                  className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
+                  style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
+                  value={superPass}
+                  placeholder='Super usuario'
+                  placeholderTextColor={primaryColor}
+                  onChangeText={(text) => setSuperPass(text)}
+                  />
+                
+              </View>
+              <View className='w-11/12 self-center flex flex-row items-center justify-center gap-2  rounded-lg p-3'>      
+                <TouchableOpacity 
+                  onPress={() => {
+                    setSuperPass("")
+                    setOpenSuperModal(false)
+                    
+                  }} 
+                  className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
+                  style={{backgroundColor: primaryColor}}
+                  >
+                  <Icon name='close-circle-outline' size={50} color={"#fff"}/>
+
+                </TouchableOpacity>
+                 <TouchableOpacity 
+                  onPress={() => {
+                    handleSuperPass()
+                  }} 
+                  className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
+                  style={{backgroundColor: primaryColor}}
+                  >
+                  <Icon name='lock-open-outline' size={50} color={"#fff"}/>
+
+                </TouchableOpacity>
+                
+              </View>
+              
+            </View>
+      </Modal>
+
+      <Modal visible={openSuccessModal} 
+        onRequestClose={() => {
+          setOpenSuccessModal(false)
+        }}>
+            <View className='flex-1 bg-green-500 flex items-center justify-center'>
+              <View className='w-full my-3 flex items-center justify-center'>
+                <Icon name='checkmark-circle-outline' size={120} color={"#fff"}/>                
+              </View>
+            <Text className='w-full text-center font-bold text-white text-2xl'>
+              {userId}, Asistencia tomada correctamente
+            </Text>
+             
             </View>
       </Modal>
     </>

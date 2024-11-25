@@ -2,7 +2,7 @@ import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation
 import React, { useEffect, useState } from 'react'
 import { Alert, Button, Dimensions, FlatList, Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StackExploreParams } from '../../routes/StackExplore'
-import { useAppTheme, useExploreStore } from '../../shared/hooks'
+import { useAppTheme } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
@@ -36,7 +36,14 @@ const ExploreContentScreen = () => {
   return (
     <>
      <View className='w-full flex-1 bg-white'>
-      <Text className='font-bold text-center text-xl' style={{color: primaryColor}}>Usuarios registrados</Text>
+      <View className='w-full flex flex-row items-center justify-around my-3'>
+        <Text className='font-bold text-center text-xl' style={{color: primaryColor}}>Usuarios registrados</Text>
+
+        <TouchableOpacity onPress={() => navigation.navigate("CreatorsScreen")} className=''>
+          <Icon name='help-circle-outline' size={30} color={"#111"} />
+        </TouchableOpacity>
+      </View>
+      
       <View className='my-2'/>
       <FlatList
         data={data}
@@ -53,7 +60,7 @@ const ExploreContentScreen = () => {
                 style={styles.image} />
               
               <View className='flex-1'>
-                <Text style={{color: primaryColor}}  className='m-2 font-bold text-xl'>ID: {item.userId}</Text>
+                <Text style={{color: primaryColor}}  className='m-2 font-bold text-xl'>Matrícula: {item.userId}</Text>
                 <Text style={{color: primaryColor}} className='m-2 font-bold text-base'>Nombre: {item.userName}</Text>
               </View>
               

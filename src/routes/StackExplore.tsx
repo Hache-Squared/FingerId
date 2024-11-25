@@ -7,6 +7,7 @@ import { RegisterUserScreen } from '../explore/screens/RegisterUserScreen';
 import { LoginUserScreen } from '../explore/screens/LoginUserScreen';
 import { RegistersByUserScreen } from '../explore/screens/RegistersByUserScreen';
 import { useSecurity } from '../shared/hooks/useSecurity';
+import { CreatorsScreen } from '../explore/screens/CreatorsScreen';
 
 export type StackExploreParams = {
   ExploreContent: undefined,
@@ -15,7 +16,8 @@ export type StackExploreParams = {
     id: string,
   },
   Register: undefined,
-  LoginUserScreen: undefined
+  LoginUserScreen: undefined,
+  CreatorsScreen: undefined
 }
 
 
@@ -40,6 +42,7 @@ export const StackExplore = () => {
           <Stack.Screen name="ExploreContent" options={{title: 'Explorar Contenido'}} component={ExploreContentScreen} />
           <Stack.Screen name="Register" component={RegisterUserScreen} />
           <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />
+          <Stack.Screen name="CreatorsScreen" component={CreatorsScreen} />
           </>    
           
         )

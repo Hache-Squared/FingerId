@@ -28,7 +28,7 @@ const RegisterUserScreen = () => {
     }
 
     if (!trimmedUserIdText) {
-      Alert.alert('Error', 'El campo de id no puede estar vacío o contener solo espacios en blanco.');
+      Alert.alert('Error', 'El campo de matrícula no puede estar vacío o contener solo espacios en blanco.');
       return false;
     }
 

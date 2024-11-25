@@ -103,7 +103,7 @@ const LoginUserScreen = () => {
         </TouchableOpacity>
       </View>
       <Text className='w-full text-center font-bold text-black text-2xl'>Bienvenido a Checker</Text>
-      <Text className='w-full text-center font-bold text-black text-2xl'>Equipo: 2</Text>
+      <Text className='w-full text-center font-bold text-black text-2xl'>Equipo: 6</Text>
        
       <>
          

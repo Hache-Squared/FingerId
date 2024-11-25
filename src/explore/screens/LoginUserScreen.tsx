@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useAppTheme, useExploreStore, useFingerId, useLocalStorage } from '../../shared/hooks'
+import { useAppTheme, useExploreStore, useFingerId } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CameraView } from '../views/CameraView';
-import { PhotoData, usePhotoManagement } from '../../shared/hooks/usePhotoManagement';
-import { usePhotoManagementWithStorage } from '../../shared/hooks/usePhotoManagementWithStorage';
+import { PhotoData, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'; 
 import { PhotoFile } from 'react-native-vision-camera';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StackExploreParams } from '../../routes/StackExplore';

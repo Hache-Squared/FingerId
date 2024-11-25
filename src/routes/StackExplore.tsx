@@ -1,7 +1,7 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import { ExploreContentScreen  } from '../explore/screens';
 import { useAppTheme } from '../shared/hooks';
-import { HeaderLeftGradient, HeaderLogo } from '../shared/components';
+
 import { BookListItem } from '../types';
 import { RegisterUserScreen } from '../explore/screens/RegisterUserScreen';
 import { LoginUserScreen } from '../explore/screens/LoginUserScreen';

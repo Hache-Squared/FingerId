@@ -2,9 +2,9 @@ import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation
 import React, { useEffect, useState } from 'react'
 import { Alert, Button, Dimensions, FlatList, Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StackExploreParams } from '../../routes/StackExplore'
-import { useAppTheme, useBackpackStore, useExploreStore } from '../../shared/hooks'
+import { useAppTheme, useExploreStore } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
-import { usePhotoManagementWithStorage } from '../../shared/hooks/usePhotoManagementWithStorage'
+
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
 import { useSecurity } from '../../shared/hooks/useSecurity'
 

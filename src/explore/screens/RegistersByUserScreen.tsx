@@ -2,7 +2,7 @@ import { NavigationProp, RouteProp, useNavigation, useRoute } from '@react-navig
 import React, { useEffect, useState } from 'react'
 import { Alert, Button, Dimensions, FlatList, Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StackExploreParams } from '../../routes/StackExplore'
-import { useAppTheme, useBackpackStore, useExploreStore } from '../../shared/hooks'
+import { useAppTheme, useExploreStore } from '../../shared/hooks'
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
 
 const RegistersByUserScreen = () => {

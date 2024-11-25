@@ -1,18 +1,13 @@
-import { configureStore } from "@reduxjs/toolkit";
-import { backpackSlice, notebookSlice } from "./explore";
-import { exploreSlice } from "./explore/exploreSlice";
-import { permissionsSlice } from "./permissions";
+import { configureStore } from "@reduxjs/toolkit"; 
+
 import { appThemeSlice } from "./profile/appThemeSlice";
 import { securitySlice } from "./explore/securitySlice";
 
 
 export const store = configureStore({
-    reducer: {
-        notebook: notebookSlice.reducer,
-        backpack: backpackSlice.reducer,
-        explore: exploreSlice.reducer,
-        appTheme: appThemeSlice.reducer,
-        permissions: permissionsSlice.reducer,
+    reducer: { 
+        
+        appTheme: appThemeSlice.reducer, 
         security: securitySlice.reducer
     },
     // middleware: (getDefaultMiddleware) => getDefaultMiddleware({

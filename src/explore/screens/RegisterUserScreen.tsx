@@ -66,28 +66,28 @@ const RegisterUserScreen = () => {
       className='w-full justify-center self-center bg-white '>
 
       
-      <Text className='w-full text-center font-bold text-black text-2xl'>Registrar Usuario</Text>
+      <Text className='w-full text-center font-bold text-black text-2xl my-4'>Registrar Empleado</Text>
        
       <>
         <View className='w-11/12 self-center  rounded-lg p-3'>
-        <Text className='font-bold text-lg text-black'>Nombre:</Text>
+        <Text className='font-bold text-lg text-black'>Nombre De Empleado:</Text>
           <TextInput
             className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
             style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
             value={userName}
-            placeholder={"Nombre de alumno"}
+            placeholder={"Nombre De Empleado"}
             placeholderTextColor={primaryColor}
             onChangeText={(text) => setUserName(text)}
             />
           
         </View>
         <View className='w-11/12 self-center  rounded-lg p-3'>
-          <Text className='font-bold text-lg text-black'>Matrícula:</Text>
+          <Text className='font-bold text-lg text-black'>No. De Empleado:</Text>
           <TextInput
             className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
             style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
             value={userId}
-            placeholder='Matrícula de alumno'
+            placeholder='Numero De Empleado'
             placeholderTextColor={primaryColor}
             onChangeText={(text) => setUserId(text)}
             />
@@ -95,7 +95,7 @@ const RegisterUserScreen = () => {
         </View>
         {photo && <Image source={{ uri: `file://${photo.path}` }} style={styles.image} />}
         <View className='w-11/12 self-center  rounded-lg p-3'>
-        
+          <Text className='font-bold text-lg text-black'>Foto De Empleado:</Text>
           <TouchableOpacity 
             onPress={() => {
               setOpenModal(true)
@@ -104,7 +104,7 @@ const RegisterUserScreen = () => {
             className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
             style={{backgroundColor: primaryColor}}
             >
-            <Icon name='camera' size={50} color={"#fff"}/>
+            <Icon name='person-add-outline' size={50} color={"#fff"}/>
 
           </TouchableOpacity>
           
@@ -121,7 +121,7 @@ const RegisterUserScreen = () => {
                 fontWeight: 'bold'
             }}
             >
-                Generar Usuario
+                Generar Empleado
             </Text>
         </TouchableOpacity>
         

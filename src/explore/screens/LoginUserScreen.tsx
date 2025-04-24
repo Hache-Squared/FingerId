@@ -68,7 +68,7 @@ const LoginUserScreen = () => {
   }
 
   const handleSuperPass = async() =>{
-    if(superPass === "master"){
+    if(superPass === "admin"){
       await startUsingSuperPass()
     }else{
       
@@ -97,23 +97,17 @@ const LoginUserScreen = () => {
       <View 
       className='flex-1 w-full justify-center self-center bg-white '>
 
-      <View className='w-5/6 self-center flex flex-row items-center justify-end bg-red-00 ' >
-        <TouchableOpacity onPress={() => handleAuth()} className='p-2 rounded-full bg-gray-200'>
-          <Icon name='lock-open-outline' size={30} color={"#111"} className='mx-4'/>
-        </TouchableOpacity>
-      </View>
-      <Text className='w-full text-center font-bold text-black text-2xl'>Bienvenido a Checker</Text>
-      <Text className='w-full text-center font-bold text-black text-2xl'>Equipo: 6</Text>
+      <Text className='w-full text-center font-bold text-black text-2xl'>Registro De Asistencia</Text>
        
       <>
          
         <View className='w-11/12 self-center  rounded-lg p-3'>
-          <Text className='font-bold text-lg text-black text-center'>Matrícula:</Text>
+          <Text className='font-bold text-lg text-black text-center'>No. Empleado:</Text>
           <TextInput
             className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
             style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
             value={userId}
-            placeholder='Matrícula de alumno'
+            placeholder='Numero de empleado'
             placeholderTextColor={primaryColor}
             onChangeText={(text) => setUserId(text)}
             />
@@ -127,19 +121,28 @@ const LoginUserScreen = () => {
               setOpenModal(true)
               
             }} 
-            className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
+            className='w-4/12 rounded-md my-2 p-3 flex self-center items-center justify-center'
             style={{backgroundColor: primaryColor}}
             >
-            <Icon name='camera' size={50} color={"#fff"}/>
-
+            <Icon name='scan-circle-outline' size={50} color={"#fff"}/>
+            <Text 
+            className='text-base text-center'
+            style={{
+                color: secondaryColor,
+                fontWeight: 'bold'
+            }}
+            >
+                Escanear
+            </Text>
           </TouchableOpacity>
           
         </View>
         <TouchableOpacity 
             onPress={handleLogin} 
-            className='w-10/12 rounded-full m-2 p-2 self-center'
+            className='w-10/12 rounded-full m-2 p-2 flex flex-row flex-nowrap items-center justify-center  self-center'
             style={{backgroundColor: primaryColor}}
             >
+            <Icon name='checkmark-done-outline' size={30} color={secondaryColor} style={{margin: 5}}/>
             <Text 
             className='text-lg text-center'
             style={{
@@ -150,6 +153,24 @@ const LoginUserScreen = () => {
                 Registrar asistencia
             </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+            onPress={() => handleAuth()} 
+            className='w-10/12 rounded-full m-2 p-2 flex flex-row flex-nowrap items-center justify-center  self-center'
+            style={{backgroundColor: primaryColor}}
+            >
+            <Icon name='lock-open-outline' size={30} color={secondaryColor} style={{margin: 5}}/>
+            <Text 
+            className='text-lg text-center'
+            style={{
+                color: secondaryColor,
+                fontWeight: 'bold'
+            }}
+            >
+                Administrador
+            </Text>
+        </TouchableOpacity>
+
       </>
       
 

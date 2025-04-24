@@ -1,7 +1,7 @@
 import { ColorsTheme } from "../../types"
 
 export const lightColorsTheme: ColorsTheme = {
-    primaryColor: '#0984e3',
+    primaryColor: '#2d3436',
     secondaryColor: '#fff',
 
     screens: {

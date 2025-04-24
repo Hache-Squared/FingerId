@@ -64,7 +64,7 @@ export const CameraView: FC<CameraViewProps> = ({onConfirmPhoto}) => {
         photo={true}
       />
       <View className='w-full flex items-center justify-center bg-[rgba(1,1,1,.7)]'>
-        <TouchableOpacity className='w-auto rounded-md flex flex-row items-center justify-center  my-2 p-2 bg-blue-500 ' onPress={takePicture} >
+        <TouchableOpacity className='w-auto rounded-md flex flex-row items-center justify-center  my-2 p-2 bg-black ' onPress={takePicture} >
           
           <Icon name='camera' size={40} color={"#fff"}/>
           {/* <Text className='text-white text-center'>Tomar foto asistencia</Text> */}
@@ -78,12 +78,12 @@ export const CameraView: FC<CameraViewProps> = ({onConfirmPhoto}) => {
             <View className='flex-1 '>
             {photo && <Image source={{ uri: `file://${photo.path}` }} style={styles.image} />}
               <View className='w-full flex flex-row flex-nowrap items-center justify-center bg-[rgba(1,1,1,.7)]'>
-              <TouchableOpacity className='w-auto rounded-md flex flex-row items-center justify-center my-2 p-2 bg-blue-500 mx-2' onPress={confirmPhoto} >
+              <TouchableOpacity className='w-auto rounded-md flex flex-row items-center justify-center my-2 p-2 bg-black mx-2' onPress={confirmPhoto} >
                 
                 <Icon name='checkmark-done-outline' size={40} color={"#fff"}/>
                 {/* <Text className='text-white text-center'>Tomar foto asistencia</Text> */}
               </TouchableOpacity>
-              <TouchableOpacity className='w-auto rounded-md flex flex-row items-center justify-center  my-2 p-2 bg-blue-500 mx-2' onPress={retryPhoto} >
+              <TouchableOpacity className='w-auto rounded-md flex flex-row items-center justify-center  my-2 p-2 bg-black mx-2' onPress={retryPhoto} >
                 
                 <Icon name='reload-outline' size={40} color={"#fff"}/>
                 {/* <Text className='text-white text-center'>Tomar foto asistencia</Text> */}

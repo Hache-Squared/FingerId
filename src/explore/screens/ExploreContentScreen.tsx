@@ -37,7 +37,7 @@ const ExploreContentScreen = () => {
     <>
      <View className='w-full flex-1 bg-white'>
       <View className='w-full flex flex-row items-center justify-around my-3'>
-        <Text className='font-bold text-center text-xl' style={{color: primaryColor}}>Usuarios registrados</Text>
+        <Text className='font-bold text-center text-xl' style={{color: primaryColor}}>Empleados</Text>
 
         <TouchableOpacity onPress={() => navigation.navigate("CreatorsScreen")} className=''>
           <Icon name='help-circle-outline' size={30} color={"#111"} />
@@ -53,14 +53,14 @@ const ExploreContentScreen = () => {
               navigation.navigate("RegistersByUser", {
                 id: item.userId
               })
-            }} className='w-11/12 bg-gray-100 self-center rounded-md my-0.5 flex flex-row items-center justify-center' key={index}>
+            }} className='w-11/12 bg-gray-100 self-center rounded-md my-0.5 flex flex-row-reverse items-center justify-center' key={index}>
               
               <Image 
                 source={{ uri: `file://${item.profilePhoto?.path}` }} 
                 style={styles.image} />
               
               <View className='flex-1'>
-                <Text style={{color: primaryColor}}  className='m-2 font-bold text-xl'>Matrícula: {item.userId}</Text>
+                <Text style={{color: primaryColor}}  className='m-2 font-bold text-xl'>No. Empleado: {item.userId}</Text>
                 <Text style={{color: primaryColor}} className='m-2 font-bold text-base'>Nombre: {item.userName}</Text>
               </View>
               
@@ -72,12 +72,14 @@ const ExploreContentScreen = () => {
 
       />
      </View>
-     <TouchableOpacity onPress={() => startLockingState()} className='w-[60px] h-[60px] absolute flex items-center justify-center bottom-10 left-8 p-2 rounded-full bg-gray-200'>
-        <Icon name='lock-closed-outline' size={40} color={"#111"} />
+     <TouchableOpacity onPress={() => startLockingState()} className=' absolute flex flex-row flex-nowrap items-center justify-center bottom-10 left-8 px-2 py-1 rounded-full bg-gray-200'>
+        <Icon name='lock-closed-outline' size={25} color={"#111"} />
+        <Text className='m-3 text-black font-bold'>Bloquear</Text>
       </TouchableOpacity>
 
-     <TouchableOpacity onPress={() => navigation.navigate("Register")} className='w-[60px] h-[60px] absolute flex items-center justify-center bottom-10 right-8 p-2 rounded-full bg-gray-200'>
-        <Icon name='add-circle-outline' size={40} color={"#111"} />
+     <TouchableOpacity onPress={() => navigation.navigate("Register")} className=' absolute flex flex-row flex-nowrap items-center justify-center bottom-10 right-8 px-2 py-1 rounded-full bg-gray-200'>
+        <Icon name='add-circle-outline' size={25} color={"#111"} />
+        <Text className='m-3 text-black font-bold'>Nuevo</Text>
       </TouchableOpacity>
 
     </>

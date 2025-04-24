@@ -1,7 +1,7 @@
 import { ColorsTheme } from "../../types"
 
 export const lightColorsTheme: ColorsTheme = {
-    primaryColor: '#008605',
+    primaryColor: '#0984e3',
     secondaryColor: '#fff',
 
     screens: {
@@ -9,7 +9,7 @@ export const lightColorsTheme: ColorsTheme = {
         secondaryColor: "#e8ecf5",
         titleColor: "#111",
     },
-    statusBarColor: '#008605',
+    statusBarColor: '#0984e3',
     buttons: {
         backgroundColor: '#fff',
         textColor: '#111'
@@ -19,13 +19,13 @@ export const lightColorsTheme: ColorsTheme = {
     },
     tabBar: {
         backgroundColor: '#fff',
-        labelColorActive: '#008605',
+        labelColorActive: '#0984e3',
         labelColorInactive: '#111'
     },
     menuNotebookContent: {
         titleBackgroundColor: '#111',
         titleTextColor: '#fff',
-        colorStatusActive: '#008605',
+        colorStatusActive: '#0984e3',
         colorStatusInactive: 'gray',
     },
     headerMenuNotebookContent: {
@@ -33,7 +33,7 @@ export const lightColorsTheme: ColorsTheme = {
         buttonMenuBackgroundColor: "#d2dae2",
     },
     sheetContent:{
-        sheetTitle: '#008605',
+        sheetTitle: '#0984e3',
         textTitleColor: '#111',
         textSubtitleColor: '#111',
         textColor: '#111',
@@ -49,14 +49,14 @@ export const lightColorsTheme: ColorsTheme = {
 }
 
 export const darkColorsTheme: ColorsTheme = {
-    primaryColor: '#008605',
+    primaryColor: '#0984e3',
     secondaryColor: '#111',
     screens: {
         primaryColor: "#000000",
         secondaryColor: "#121212",
         titleColor: "#fff",
     },
-    statusBarColor: '#008605',
+    statusBarColor: '#0984e3',
     buttons: {
         backgroundColor: '#2f3542',
         textColor: '#fff'
@@ -66,13 +66,13 @@ export const darkColorsTheme: ColorsTheme = {
     },
     tabBar: {
         backgroundColor: '#111',
-        labelColorActive: '#008605',
+        labelColorActive: '#0984e3',
         labelColorInactive: '#fff'
     },
     menuNotebookContent: {
         titleBackgroundColor: '#111',
         titleTextColor: '#fff',
-        colorStatusActive: '#008605',
+        colorStatusActive: '#0984e3',
         colorStatusInactive: '#FFF',
     },
     headerMenuNotebookContent: {
@@ -80,7 +80,7 @@ export const darkColorsTheme: ColorsTheme = {
         buttonMenuBackgroundColor: "#111",
     },
     sheetContent:{
-        sheetTitle: '#008605',
+        sheetTitle: '#0984e3',
         textTitleColor: '#fff',
         textSubtitleColor: '#fff',
         textColor: '#fff',

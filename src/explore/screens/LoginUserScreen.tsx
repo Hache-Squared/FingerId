@@ -8,62 +8,22 @@ import { PhotoFile } from 'react-native-vision-camera';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StackExploreParams } from '../../routes/StackExplore';
 import { useSecurity } from '../../shared/hooks/useSecurity';
-import { CameraLogin } from '../views/CameraLogin';
+import { CameraLogin, ResponseAuth } from '../views/CameraLogin';
 
 const LoginUserScreen = () => {
   const { primaryColor, secondaryColor } = useAppTheme()
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
-  const [userId, setUserId] = useState<string>('')
   const [superPass, setSuperPass] = useState<string>('')
   const [photo, setPhoto] = useState<PhotoFile | null>(null)
   const [openModal, setOpenModal] = useState(false)
   const [openSuperModal, setOpenSuperModal] = useState(false)
-  const [openSuccessModal, setOpenSuccessModal] = useState(false)
   const { savePhoto, getUsers} = usePhotoManagement()
   const {isLocked, startUnlockingState, startUsingSuperPass} = useSecurity()
 
 
-  const validateFields = () => {
-  
-    const trimmedUserIdText = userId.trim();
-
-    if (!trimmedUserIdText) {
-      Alert.alert('Error', 'El campo de id no puede estar vacío o contener solo espacios en blanco.');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleLogin = async() => {
-    if (validateFields() && photo) {
-      const currentUsers = await getUsers()
-      let index = currentUsers.findIndex(x => x.userId === userId);
-      if(index === -1){
-        Alert.alert("Error","Error, el usuario no existe") 
-        return;
-      }
-
-      const res = await savePhoto(userId,"fotosHistorial", {
-        id: userId,
-        path: photo.path
-      })
-
-      if(!res){
-        Alert.alert("Error al guardar")
-        return;
-      }
-      handleCleanFields()
-      //navigation.navigate("ExploreContent")
-
-    }
-  }
-
   const handleAuth = async() => {
     const res = await startUnlockingState();
     if(!res){
-      //Alert.alert("Error", "Usar contraseña")
-      //navigation.navigate("ExploreContent");
       setOpenSuperModal(true)
     }
   }
@@ -80,14 +40,9 @@ const LoginUserScreen = () => {
   const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
   const handleCleanFields = async() => {
-    
-    setOpenSuccessModal(true)
     await delay(2000);
-    setOpenSuccessModal(false)
-    setUserId("")
     setSuperPass("")
     setPhoto(null)
-
   }
 
 
@@ -102,18 +57,6 @@ const LoginUserScreen = () => {
        
       <>
          
-        <View className='w-11/12 self-center  rounded-lg p-3'>
-          <Text className='font-bold text-lg text-black text-center'>No. Empleado:</Text>
-          <TextInput
-            className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
-            style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
-            value={userId}
-            placeholder='Numero de empleado'
-            placeholderTextColor={primaryColor}
-            onChangeText={(text) => setUserId(text)}
-            />
-          
-        </View>
         {photo && <Image source={{ uri: `file://${photo.path}` }} style={styles.image} />}
         <View className='w-11/12 self-center  rounded-lg p-3'>
         
@@ -138,22 +81,6 @@ const LoginUserScreen = () => {
           </TouchableOpacity>
           
         </View>
-        <TouchableOpacity 
-            onPress={handleLogin} 
-            className='w-10/12 rounded-full m-2 p-2 flex flex-row flex-nowrap items-center justify-center  self-center'
-            style={{backgroundColor: primaryColor}}
-            >
-            <Icon name='checkmark-done-outline' size={30} color={secondaryColor} style={{margin: 5}}/>
-            <Text 
-            className='text-lg text-center'
-            style={{
-                color: secondaryColor,
-                fontWeight: 'bold'
-            }}
-            >
-                Registrar asistencia
-            </Text>
-        </TouchableOpacity>
 
         <TouchableOpacity 
             onPress={() => handleAuth()} 
@@ -180,15 +107,17 @@ const LoginUserScreen = () => {
       <Modal visible={openModal} onRequestClose={() => setOpenModal(false)}>
             <View className='flex-1 '>
             <CameraLogin
-              onLoginFail={(photo, response) => {
+              onLoginFail={(photo, response: ResponseAuth) => {
                 console.log("onLoginFail: ", {photo, response});
                 setPhoto(photo)
                 setOpenModal(false)
+                handleCleanFields()
               }}
               onLoginSuccess={(photo, response) => {
                 console.log("onLoginSuccess: ",{photo, response});
                 setPhoto(photo)
                 setOpenModal(false)
+                handleCleanFields()
               }}
             />
             </View>
@@ -242,20 +171,6 @@ const LoginUserScreen = () => {
             </View>
       </Modal>
 
-      <Modal visible={openSuccessModal} 
-        onRequestClose={() => {
-          setOpenSuccessModal(false)
-        }}>
-            <View className='flex-1 bg-green-500 flex items-center justify-center'>
-              <View className='w-full my-3 flex items-center justify-center'>
-                <Icon name='checkmark-circle-outline' size={120} color={"#fff"}/>                
-              </View>
-            <Text className='w-full text-center font-bold text-white text-2xl'>
-              {userId}, Asistencia tomada correctamente
-            </Text>
-             
-            </View>
-      </Modal>
     </>
 
     

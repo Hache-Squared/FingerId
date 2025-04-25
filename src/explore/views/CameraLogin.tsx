@@ -1,9 +1,10 @@
 import React, { FC, useEffect, useRef, useState } from 'react';
-import { Dimensions, Modal, TouchableOpacity, Platform } from 'react-native';
+import { Dimensions, Modal, TouchableOpacity, Platform, Alert } from 'react-native';
 import { Button, StyleSheet, View, Text, Image } from 'react-native';
 import { Camera, useCameraDevices, PhotoFile, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
+import { usePhotoManagement } from '../../shared/hooks/usePhotoManagement';
 
 export interface ResponseAuth {
   match:  boolean;
@@ -31,7 +32,7 @@ export const CameraLogin: FC<CameraLoginProps> = ({onLoginFail, onLoginSuccess})
   const cameraRef = useRef<Camera>(null);
   const device = useCameraDevice('front')
   const { hasPermission, requestPermission } = useCameraPermission()
-
+  const { savePhoto, getUsers} = usePhotoManagement()
   //if (!hasPermission) return <Text> No tiene permiso </Text>;
   if (device == null) return <Text> No tiene camara </Text>;
 
@@ -87,6 +88,7 @@ export const CameraLogin: FC<CameraLoginProps> = ({onLoginFail, onLoginSuccess})
 
       setResponseApi(response.data)
       setOpenSuccessModal(true)
+      await handleLogin(photo, response.data);
       //const response = await axios.get('http://testingdev01.loclx.io/users');
       console.log('Imagen subida correctamente:', response.data);
     } catch (error) {
@@ -104,12 +106,32 @@ export const CameraLogin: FC<CameraLoginProps> = ({onLoginFail, onLoginSuccess})
     }
   };
 
-  const confirmPhoto = () => {
+  const handleLogin = async(photo: PhotoFile, responseApi: ResponseAuth) => {
+    if (photo) {
+      const currentUsers = await getUsers()
+      let index = currentUsers.findIndex(x => x.userId == responseApi?.user?.employee_number);
+      console.log({
+        currentUsers,
+        responseApi
+      });
+      
+      if(index === -1){
+        Alert.alert("Error","Error, el usuario no existe") 
+        console.log("Error, el usuario no existe");
+        return;
+      }
 
-    
-  }
-  const retryPhoto = () => {
-    
+      const res = await savePhoto(responseApi?.user?.employee_number ?? "","fotosHistorial", {
+        id: responseApi?.user?.employee_number ?? "",
+        path: photo.path
+      })
+
+      if(!res){
+        Alert.alert("Error al guardar")
+        console.log("Error al guardar");
+        return;
+      }
+    }
   }
 
 
@@ -151,9 +173,11 @@ export const CameraLogin: FC<CameraLoginProps> = ({onLoginFail, onLoginSuccess})
                 <Icon name='checkmark-circle-outline' size={120} color={"#fff"}/>                
               </View>
             <Text className='w-full text-center font-bold text-white text-2xl'>
-              Asistencia tomada correctamente, Persona detectada
+              Asistencia tomada correctamente.
             </Text>
-              
+            <Text className='w-full text-center font-bold text-white text-2xl'>
+              Bienvenido {responseApi?.user?.full_name ?? ""}.
+            </Text>
             </View>
             <View className='w-full flex flex-row flex-nowrap items-center justify-center bg-white'>
               <TouchableOpacity 

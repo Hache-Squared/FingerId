@@ -8,6 +8,7 @@ import { PhotoFile } from 'react-native-vision-camera';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StackExploreParams } from '../../routes/StackExplore';
 import { useSecurity } from '../../shared/hooks/useSecurity';
+import { CameraLogin } from '../views/CameraLogin';
 
 const LoginUserScreen = () => {
   const { primaryColor, secondaryColor } = useAppTheme()
@@ -178,12 +179,16 @@ const LoginUserScreen = () => {
 
       <Modal visible={openModal} onRequestClose={() => setOpenModal(false)}>
             <View className='flex-1 '>
-            <CameraView
-              onConfirmPhoto={(photo) => {
-                console.log(photo);
+            <CameraLogin
+              onLoginFail={(photo, response) => {
+                console.log("onLoginFail: ", {photo, response});
                 setPhoto(photo)
                 setOpenModal(false)
-                
+              }}
+              onLoginSuccess={(photo, response) => {
+                console.log("onLoginSuccess: ",{photo, response});
+                setPhoto(photo)
+                setOpenModal(false)
               }}
             />
             </View>

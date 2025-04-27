@@ -5,10 +5,11 @@ import { StackExploreParams } from '../../routes/StackExplore'
 import { useAppTheme } from '../../shared/hooks'
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
 import Icon from 'react-native-vector-icons/Ionicons';
+import axios from 'axios'
 
 const RegistersByUserScreen = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
-  const { getPhotos, getUserData } = usePhotoManagement()
+  const { getPhotos, getUserData, deleteUser: deleteUserPhoto } = usePhotoManagement()
   const { primaryColor } = useAppTheme()
   const [data, setData] = useState<PhotoInfo[]>([]);
   const [user, setUser] = useState<{ userId: string; userName: string; photoPath: string } | null>(null);
@@ -60,7 +61,33 @@ const RegistersByUserScreen = () => {
     return `${dayOfWeek}, ${day} de ${month} de ${year}, ${formattedHours}:${formattedMinutes} ${period}`;
 };
 
- 
+const deleteUserPrompt = async(id: string) => {
+  Alert.alert('Eliminar Empleado', '¿Esta seguro de borrar el usuario?, este cambio es irreversible.', [
+    {
+      text: 'Cancelar',
+      onPress: () => console.log('Cancel Pressed'),
+      style: 'cancel',
+    },
+    {text: 'Borrar', onPress: async() => deleteUser(id)},
+  ]);
+}
+
+const deleteUser = async (employeeNumber: string) => {
+  try {
+    console.log({
+      employeeNumber
+    });
+    
+    const res = await axios.delete(`http://testingdev01.loclx.io/delete/${employeeNumber}`);
+    console.log('Usuario eliminado:', res.data);
+    await deleteUserPhoto(employeeNumber)
+    navigation.goBack();
+    return true;
+  } catch (error: any) {
+    console.error('Error eliminando usuario:', error?.response?.data || error.message);
+    return false;
+  }
+};
 
   return (
     <>
@@ -80,7 +107,7 @@ const RegistersByUserScreen = () => {
 
       </View>
       <View className='w-full flex flex-row flex-nowrap items-center justify-center gap-3 my-0.5'>
-        <TouchableOpacity onPress={() => null} className=' flex flex-row flex-nowrap items-center justify-center px-2 py-1 rounded-full bg-gray-200'>
+        <TouchableOpacity onPress={() => deleteUserPrompt(user?.userId ?? "")} className=' flex flex-row flex-nowrap items-center justify-center px-2 py-1 rounded-full bg-gray-200'>
           <Icon name='person-remove-outline' size={25} color={"#111"} />
           <Text className='m-3 text-black font-bold'>Borrar</Text>
         </TouchableOpacity>

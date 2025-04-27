@@ -271,6 +271,38 @@ export const usePhotoManagement = () => {
             return [];
         }
     };
+
+    const deleteUser = async (userId: string): Promise<boolean> => {
+        try {
+          // 1. Eliminar datos del usuario en AsyncStorage
+          const existingData = await AsyncStorage.getItem('users');
+          const users = existingData ? JSON.parse(existingData) : {};
+      
+          if (users[userId]) {
+            delete users[userId];
+            await AsyncStorage.setItem('users', JSON.stringify(users));
+            console.log(`Datos de usuario ${userId} eliminados de AsyncStorage`);
+          } else {
+            console.log(`No se encontraron datos para el usuario ${userId} en AsyncStorage`);
+          }
+      
+          // 2. Eliminar carpeta del usuario
+          const userFolderPath = `${usersPath}/${userId}`;
+      
+          const folderExists = await RNFS.exists(userFolderPath);
+          if (folderExists) {
+            await RNFS.unlink(userFolderPath);
+            console.log(`Carpeta del usuario ${userId} eliminada`);
+          } else {
+            console.log(`La carpeta del usuario ${userId} no existe`);
+          }
+      
+          return true;
+        } catch (error) {
+          console.log('Error al eliminar el usuario:', error);
+          return false;
+        }
+      };
     
 
     return {
@@ -282,6 +314,7 @@ export const usePhotoManagement = () => {
         listUsersWithProfilePhotos,
         getUserData,
         saveUserData,
-        getUsers
+        getUsers,
+        deleteUser
     };
 };

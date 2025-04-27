@@ -15,7 +15,10 @@ export type StackExploreParams = {
   RegistersByUser: {
     id: string,
   },
-  Register: undefined,
+  Register: {
+    typeOfForm: string,
+    userInfo?: any | null
+  },
   LoginUserScreen: undefined,
   CreatorsScreen: undefined
 }

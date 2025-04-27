@@ -56,7 +56,8 @@ const ExploreContentScreen = () => {
             }} className='w-11/12 bg-gray-100 self-center rounded-md my-0.5 flex flex-row-reverse items-center justify-center' key={index}>
               
               <Image 
-                source={{ uri: `file://${item.profilePhoto?.path}` }} 
+                source={{ uri: `file://${item.profilePhoto?.path}?timestamp=${Date.now()}` }} 
+                
                 style={styles.image} />
               
               <View className='flex-1'>
@@ -77,7 +78,10 @@ const ExploreContentScreen = () => {
         <Text className='m-3 text-black font-bold'>Bloquear</Text>
       </TouchableOpacity>
 
-     <TouchableOpacity onPress={() => navigation.navigate("Register")} className=' absolute flex flex-row flex-nowrap items-center justify-center bottom-10 right-8 px-2 py-1 rounded-full bg-gray-200'>
+     <TouchableOpacity onPress={() => navigation.navigate("Register", {
+      typeOfForm: "register",
+      userInfo: null
+     })} className=' absolute flex flex-row flex-nowrap items-center justify-center bottom-10 right-8 px-2 py-1 rounded-full bg-gray-200'>
         <Icon name='add-circle-outline' size={25} color={"#111"} />
         <Text className='m-3 text-black font-bold'>Nuevo</Text>
       </TouchableOpacity>

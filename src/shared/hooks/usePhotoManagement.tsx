@@ -104,7 +104,7 @@ export const usePhotoManagement = () => {
     };
 
     // Guardar la foto de perfil
-    const saveProfilePhoto = async (userId: string, photoData: PhotoFile): Promise<boolean> => {
+    const saveProfilePhoto = async (userId: string, photoData: PhotoFile): Promise<boolean | string> => {
         try {
             const profileFolderPath = `${usersPath}/${userId}/fotoPerfil`;
             const res = await createUserFolders(userId)
@@ -121,9 +121,14 @@ export const usePhotoManagement = () => {
             const fileName = `profile-${userId}.jpg`;
             const destinationPath = `${profileFolderPath}/${fileName}`;
 
+            const fileExists = await RNFS.exists(destinationPath);
+
+            if (fileExists) {
+                await RNFS.unlink(destinationPath); // Elimina el archivo si ya existe
+            }
             await RNFS.copyFile(photoData.path, destinationPath);
             console.log(`Foto de perfil guardada en: ${destinationPath}`);
-            return true;
+            return destinationPath;
         } catch (error) {
             console.log('Error al guardar la foto de perfil:', error);
             return false;
@@ -214,8 +219,8 @@ export const usePhotoManagement = () => {
             // Guardar los datos del usuario en AsyncStorage
             const existingData = await AsyncStorage.getItem('users');
             const users = existingData ? JSON.parse(existingData) : {};
-    
-            users[userId] = { ...users[userId], ...userData };
+            
+            users[userId] = { ...users[userId], ...userData, photoPath: photoSaved };
             await AsyncStorage.setItem('users', JSON.stringify(users));
     
             console.log(`Datos del usuario ${userId} guardados en AsyncStorage junto con su foto de perfil`);
@@ -226,12 +231,17 @@ export const usePhotoManagement = () => {
         }
     };
     
-      const getUserData = async (userId: string): Promise<{ userId: string; userName: string; } | null> => {
+      const getUserData = async (userId: string): Promise<{ userId: string; userName: string; photoPath: string } | null> => {
           try {
               const existingData = await AsyncStorage.getItem('users');
               const users = existingData ? JSON.parse(existingData) : {};
-    
-              return users[userId] || null;
+              let photoPath = `${usersPath}/${userId}/fotoPerfil/profile-${userId}.jpg`
+              
+              let data = users[userId]
+              if(!data){
+                return null;
+              }
+              return { userId: data?.userId, userName: data?.userName,  photoPath: photoPath }
           } catch (error) {
               console.log('Error al obtener los datos del usuario de AsyncStorage:', error);
               return null;

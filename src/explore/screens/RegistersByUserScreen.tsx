@@ -1,23 +1,38 @@
-import { NavigationProp, RouteProp, useNavigation, useRoute } from '@react-navigation/native'
+import { NavigationProp, RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native'
 import React, { useEffect, useState } from 'react'
 import { Alert, Button, Dimensions, FlatList, Image, ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { StackExploreParams } from '../../routes/StackExplore'
 import { useAppTheme } from '../../shared/hooks'
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const RegistersByUserScreen = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
-  const { getPhotos } = usePhotoManagement()
+  const { getPhotos, getUserData } = usePhotoManagement()
   const { primaryColor } = useAppTheme()
   const [data, setData] = useState<PhotoInfo[]>([]);
+  const [user, setUser] = useState<{ userId: string; userName: string; photoPath: string } | null>(null);
+  
   const { id } = useRoute<RouteProp<StackExploreParams, 'RegistersByUser'>>().params;
-  useEffect(() => {
-    
-    handleGetData()
-  }, [])
+  
+  useFocusEffect(
+    React.useCallback(() => {
+      // Do something when the screen is focused
+      handleGetData()
+      return () => {
+        // Do something when the screen is unfocused
+        // Useful for cleanup functions
+      };
+    }, []))
   const handleGetData = async() => {
+    setData([])
+    setUser(null)
     const d = await getPhotos(id,"fotosHistorial" )
     setData(d)
+
+    const u = await getUserData(id)
+    setUser(u)
+    
     console.log(d);
     
   }
@@ -51,9 +66,43 @@ const RegistersByUserScreen = () => {
     <>
      <View className='w-full flex-1 bg-white'>
      <Text className='font-bold text-center text-xl' style={{color: primaryColor}}>Entradas y salidas</Text>
+      <View  className='w-11/12 bg-gray-100 self-center rounded-md my-0.5 flex flex-row-reverse items-center justify-center' >
+        
+        <Image 
+          source={{ uri: `file://${user?.photoPath}?timestamp=${Date.now()}` }} 
+          style={styles.image} />
+        
+        <View className='flex-1'>
+          <Text style={{color: primaryColor}}  className='m-2 font-bold text-xl'>No. Empleado: {user?.userId}</Text>
+          <Text style={{color: primaryColor}} className='m-2 font-bold text-base'>Nombre: {user?.userName}</Text>
+        </View>
+        
+
+      </View>
+      <View className='w-full flex flex-row flex-nowrap items-center justify-center gap-3 my-0.5'>
+        <TouchableOpacity onPress={() => null} className=' flex flex-row flex-nowrap items-center justify-center px-2 py-1 rounded-full bg-gray-200'>
+          <Icon name='person-remove-outline' size={25} color={"#111"} />
+          <Text className='m-3 text-black font-bold'>Borrar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => {
+        navigation.navigate("Register", {
+          typeOfForm: "update",
+          userInfo:user
+        })
+      }} className=' flex flex-row flex-nowrap items-center justify-center px-2 py-1 rounded-full bg-gray-200'>
+          <Icon name='accessibility-outline' size={25} color={"#111"} />
+          <Text className='m-3 text-black font-bold'>Editar</Text>
+        </TouchableOpacity>
+      </View>
+        
       <View className='my-2'/>
       <FlatList
-        data={data}
+        data={data?.map((item, index) => {
+          return ({
+            ...item,
+            id: index
+          })
+        })}
         renderItem={({item, index}) => {
           return(
             <View className='w-11/12 bg-gray-100 self-center rounded-md my-0.5 flex flex-row items-center justify-center' key={index}>

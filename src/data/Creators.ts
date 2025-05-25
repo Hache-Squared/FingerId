@@ -1,22 +1,27 @@
 export const creators = [
   {
-    name: "Miriam Torres Medina",
-    id: "1356565",
+    name: "Ángel Gabriel Hernández Hernández",
+    id: "2127874",
     career: "ITS"
   },
   {
-    name: "Sofía Aidil Alcocer Pedraza",
-    id: "1962670",
+    name: "Alonso Ramírez Páez",
+    id: "2127873",
+    career: "ITS"
+  }, 
+  {
+    name: "Axel Yahir Carrillo Juárez",
+    id: "2056544",
     career: "ITS"
   },
   {
-    name: "Leslie Citlali Muñiz Jaime",
-    id: "2023915",
+    name: "Ingrid Alejandra Morales Hernández",
+    id: "1967040",
     career: "ITS"
   },
   {
-    name: "Paola Vinaney Quijas Saldaña",
-    id: "2127756",
+    name: "Ever Alejandro Martínez Arizpe",
+    id: "1952530",
     career: "ITS"
   }, 
 ]

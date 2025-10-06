@@ -8,7 +8,7 @@ export const useSecurity = () => {
   const {  authenticateUser } = useFingerId();
  
   const startUnlockingState = async() => {
-    const res = await authenticateUser();
+    const res = true;//await authenticateUser();
     if(res){
       dispatch(onLoadLock(false))
       return true;

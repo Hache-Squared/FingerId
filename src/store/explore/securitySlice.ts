@@ -16,9 +16,7 @@ export const securitySlice = createSlice({
     reducers: {
        onLoadLock: (state, action: PayloadAction<boolean>) => {
           state.isLocked = action.payload
-       },
- 
-       
+       },  
     }
 });
 

@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react'
-import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useAppTheme, useFingerId } from '../../shared/hooks'
+import React, { useState } from 'react'
+import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { useAppTheme } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
-import { CameraView } from '../views/CameraView';
-import { PhotoData, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'; 
+import { usePhotoManagement } from '../../shared/hooks/usePhotoManagement'; 
 import { PhotoFile } from 'react-native-vision-camera';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StackExploreParams } from '../../routes/StackExplore';
 import { useSecurity } from '../../shared/hooks/useSecurity';
-import { CameraLogin, ResponseAuth } from '../views/CameraLogin';
+/* @ts-ignore */
 import Logo from '../../assets/logo.png';
 
 const LoginUserScreen = () => {
@@ -16,22 +15,14 @@ const LoginUserScreen = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
-  const [photo, setPhoto] = useState<PhotoFile | null>(null)
-  const [openModal, setOpenModal] = useState(false)
   const [openSuperModal, setOpenSuperModal] = useState(false)
-  const { savePhoto, getUsers} = usePhotoManagement()
   const {isLocked, startUnlockingState, startUsingSuperPass} = useSecurity()
 
 
   const handleAuth = async() => {
     const res = await startUnlockingState();
     if(!res){
-      setOpenSuperModal(true)
     }
-  }
-
-  const handleSuperPass = async() =>{
-    
   }
 
   return (
@@ -67,7 +58,7 @@ const LoginUserScreen = () => {
           <View className='w-11/12 self-center flex flex-row items-center justify-center my-2'>      
             <TouchableOpacity 
               onPress={() => {
-                handleSuperPass()
+                handleAuth()
               }} 
               className='w-full rounded-full p-1 flex flex-row gap-2 self-center items-center justify-center'
               style={{backgroundColor: primaryColor}}

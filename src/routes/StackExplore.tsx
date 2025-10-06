@@ -6,10 +6,11 @@ import { RegistersByUserScreen } from '../explore/screens/RegistersByUserScreen'
 import { useSecurity } from '../shared/hooks/useSecurity';
 import { CreatorsScreen } from '../explore/screens/CreatorsScreen';
 import { useAuth } from '../shared/hooks/useAuth';
+import { AdminScreen } from '../explore/screens/AdminScreen';
 
 export type StackExploreParams = {
+  Admin: undefined,
   ExploreContent: undefined,
-   
   RegistersByUser: {
     id: string,
   },
@@ -35,6 +36,7 @@ export const StackExplore = () => {
           <Stack.Screen name="LoginUserScreen" component={LoginUserScreen} />
         ) : (
           <>
+            <Stack.Screen name="Admin" options={{title: 'Explorar Contenido'}} component={AdminScreen} />
             <Stack.Screen name="ExploreContent" options={{title: 'Explorar Contenido'}} component={ExploreContentScreen} />
             <Stack.Screen name="Register" component={RegisterUserScreen} />
             <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />

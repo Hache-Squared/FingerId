@@ -13,7 +13,8 @@ import { CameraLogin, ResponseAuth } from '../views/CameraLogin';
 const LoginUserScreen = () => {
   const { primaryColor, secondaryColor } = useAppTheme()
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
-  const [superPass, setSuperPass] = useState<string>('')
+  const [username, setUsername] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
   const [photo, setPhoto] = useState<PhotoFile | null>(null)
   const [openModal, setOpenModal] = useState(false)
   const [openSuperModal, setOpenSuperModal] = useState(false)
@@ -29,151 +30,54 @@ const LoginUserScreen = () => {
   }
 
   const handleSuperPass = async() =>{
-    if(superPass === "admin"){
-      await startUsingSuperPass()
-    }else{
-      
-      Alert.alert("Error", "Contraseña invalida")
-    }
+    
   }
-
-  const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-  const handleCleanFields = async() => {
-    await delay(2000);
-    setSuperPass("")
-    setPhoto(null)
-  }
-
-
-  // return ;
 
   return (
     <>
-      <View 
-      className='flex-1 w-full justify-center self-center bg-white '>
+      <View className='flex-1 my-3 flex items-center justify-center'>
+          <Text className='w-full text-center font-bold text-black text-2xl'>AssetTrack</Text>
+          <View className='w-11/12 self-center  rounded-lg p-3'>
+            <Text className='font-bold text-lg text-black text-left'>Usuario:</Text>
+            <TextInput
+              className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
+              style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
+              value={username}
+              placeholder='Nombre de usuario'
+              placeholderTextColor={primaryColor}
+              onChangeText={(text) => setUsername(text)}
+              />
+            
+          </View>
+          <View className='w-11/12 self-center  rounded-lg p-3'>
+            <Text className='font-bold text-lg text-black text-left'>Contraseña:</Text>
+            <TextInput
+              className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
+              style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
+              value={password}
+              placeholder='Contraseña'
+              placeholderTextColor={primaryColor}
+              onChangeText={(text) => setPassword(text)}
+              />
+            
+          </View>
 
-      <Text className='w-full text-center font-bold text-black text-2xl'>Registro De Asistencia</Text>
-       
-      <>
-         
-        {photo && <Image source={{ uri: `file://${photo.path}` }} style={styles.image} />}
-        <View className='w-11/12 self-center  rounded-lg p-3'>
-        
-          <TouchableOpacity 
-            onPress={() => {
-              setOpenModal(true)
-              
-            }} 
-            className='w-4/12 rounded-md my-2 p-3 flex self-center items-center justify-center'
-            style={{backgroundColor: primaryColor}}
-            >
-            <Icon name='scan-circle-outline' size={50} color={"#fff"}/>
-            <Text 
-            className='text-base text-center'
-            style={{
-                color: secondaryColor,
-                fontWeight: 'bold'
-            }}
-            >
-                Escanear
-            </Text>
-          </TouchableOpacity>
+          <View className='w-11/12 self-center flex flex-row items-center justify-center my-2'>      
+            <TouchableOpacity 
+              onPress={() => {
+                handleSuperPass()
+              }} 
+              className='w-full rounded-full p-1 flex flex-row gap-2 self-center items-center justify-center'
+              style={{backgroundColor: primaryColor}}
+              >
+              <Text className='font-bold text-lg text-white text-left'>Iniciar Sesión</Text>
+              <Icon name='enter-outline' size={50} color={"#fff"}/>
+            </TouchableOpacity>
+            
+          </View>
           
         </View>
-
-        <TouchableOpacity 
-            onPress={() => handleAuth()} 
-            className='w-10/12 rounded-full m-2 p-2 flex flex-row flex-nowrap items-center justify-center  self-center'
-            style={{backgroundColor: primaryColor}}
-            >
-            <Icon name='lock-open-outline' size={30} color={secondaryColor} style={{margin: 5}}/>
-            <Text 
-            className='text-lg text-center'
-            style={{
-                color: secondaryColor,
-                fontWeight: 'bold'
-            }}
-            >
-                Administrador
-            </Text>
-        </TouchableOpacity>
-
-      </>
-      
-
-      </View>
-
-      <Modal visible={openModal} onRequestClose={() => setOpenModal(false)}>
-            <View className='flex-1 '>
-            <CameraLogin
-              onLoginFail={(photo, response: ResponseAuth) => {
-                console.log("onLoginFail: ", {photo, response});
-                setPhoto(photo)
-                setOpenModal(false)
-                handleCleanFields()
-              }}
-              onLoginSuccess={(photo, response) => {
-                console.log("onLoginSuccess: ",{photo, response});
-                setPhoto(photo)
-                setOpenModal(false)
-                handleCleanFields()
-              }}
-            />
-            </View>
-      </Modal>
-
-      <Modal visible={openSuperModal} 
-        onRequestClose={() => {
-          setSuperPass("")
-          setOpenSuperModal(false)
-        }}>
-            <View className='flex-1 my-3 flex items-center justify-center'>
-            <Text className='w-full text-center font-bold text-black text-2xl'>Ingresar como super usuario</Text>
-            <View className='w-11/12 self-center  rounded-lg p-3'>
-                <Text className='font-bold text-lg text-black text-center'>Contraseña:</Text>
-                <TextInput
-                  className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
-                  style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
-                  value={superPass}
-                  placeholder='Super usuario'
-                  placeholderTextColor={primaryColor}
-                  onChangeText={(text) => setSuperPass(text)}
-                  />
-                
-              </View>
-              <View className='w-11/12 self-center flex flex-row items-center justify-center gap-2  rounded-lg p-3'>      
-                <TouchableOpacity 
-                  onPress={() => {
-                    setSuperPass("")
-                    setOpenSuperModal(false)
-                    
-                  }} 
-                  className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
-                  style={{backgroundColor: primaryColor}}
-                  >
-                  <Icon name='close-circle-outline' size={50} color={"#fff"}/>
-
-                </TouchableOpacity>
-                 <TouchableOpacity 
-                  onPress={() => {
-                    handleSuperPass()
-                  }} 
-                  className='w-4/12 rounded-full my-2 p-3 flex self-center items-center justify-center'
-                  style={{backgroundColor: primaryColor}}
-                  >
-                  <Icon name='lock-open-outline' size={50} color={"#fff"}/>
-
-                </TouchableOpacity>
-                
-              </View>
-              
-            </View>
-      </Modal>
-
     </>
-
-    
   )
 }
 

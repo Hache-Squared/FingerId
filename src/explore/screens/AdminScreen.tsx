@@ -1,43 +1,97 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, SafeAreaView, Image, 
   TouchableOpacityProps, FlatList, Dimensions, Modal, StyleSheet 
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; 
-import { useAuth } from '../../shared/hooks/useAuth';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { StackExploreParams } from '../../routes/StackExplore';
+import { StackExploreParams } from '../../routes/StackExplore'; // Importación de tipos de navegación
+import { useAuth } from '../../shared/hooks/useAuth'; 
+import { useUserProfile } from '../../shared/hooks/useUserProfile'; 
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 5 * 2 * 2 - 4) / 2; 
 
 // --- TIPOS ---
 
+// Utilizamos el tipo de navegación para asegurar que las rutas existen
+type AdminScreenNavigationProp = NavigationProp<StackExploreParams, 'Admin'>;
+
+
 interface ActionItem {
   id: string;
   iconName: string;
   label: string;
-  action: () => void;
+  action: (navigation: AdminScreenNavigationProp) => void; // La acción recibe navigation
+  role: 'admin' | 'user'; 
 }
 
 interface ActionButtonProps extends TouchableOpacityProps {
   item: ActionItem;
+  navigation: AdminScreenNavigationProp; // Pasamos navigation al botón
 }
 
 interface UserModalProps {
   visible: boolean;
   onClose: () => void;
   onLogout: () => void;
+  userInfo: Awaited<ReturnType<typeof useUserProfile>>['userInfo']; 
 }
 
-// --- DATOS ---
+// --- DATOS DE ACCIONES ---
 
+const ADMIN_ACTIONS: ActionItem[] = [
+  { 
+    id: '1', 
+    iconName: 'document-text-outline', 
+    label: 'Inventario (Assets)', 
+    action: (navigation) => console.log('Navegar a AssetsList (Pendiente)'), 
+    role: 'admin' 
+  },
+  { 
+    id: '2', 
+    iconName: 'person-add-outline', 
+    label: 'Registrar Usuario', 
+    // Usamos 'Register' que definiste en tu StackExploreParams
+    action: (navigation) => navigation.navigate("Register", { typeOfForm: "register" }), 
+    role: 'admin' 
+  },
+  { 
+    id: '3', 
+    iconName: 'scan-circle-outline', 
+    label: 'Escanear Equipo', 
+    action: (navigation) => console.log('Navegar a Escáner (Pendiente)'), 
+    role: 'admin' 
+  },
+  { 
+    id: '4', 
+    iconName: 'list-outline', 
+    label: 'Ver Asignaciones', 
+    action: (navigation) => console.log('Navegar a Asignaciones (Pendiente)'), 
+    role: 'admin' 
+  },
+  { 
+    id: '5', 
+    iconName: 'checkbox-outline', 
+    label: 'Mantenimiento (Admin)', 
+    action: (navigation) => console.log('Navegar a Gestión Mantenimiento (Pendiente)'), 
+    role: 'admin' 
+  },
+  { 
+    id: '6', 
+    iconName: 'settings-outline', 
+    label: 'Configuración App', 
+    action: (navigation) => console.log('Navegar a Configuración (Pendiente)'), 
+    role: 'admin' 
+  },
+];
 
-const userData = {
-  username: 'john123',
-  name: 'John Doe',
-  email: 'john@email.com',
-};
+const USER_ACTIONS: ActionItem[] = [
+    { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => console.log('Navegar a Mis Equipos (Pendiente)'), role: 'user' },
+    { id: '8', iconName: 'scan-circle-outline', label: 'Escanear Equipo', action: (navigation) => console.log('Navegar a Escáner (Pendiente)'), role: 'user' },
+    { id: '9', iconName: 'build-outline', label: 'Reportar Mantenimiento', action: (navigation) => console.log('Navegar a Reporte Mantenimiento (Pendiente)'), role: 'user' },
+];
+
 
 // --- COMPONENTES ---
 
@@ -49,9 +103,9 @@ const styles = StyleSheet.create({
   },
 });
 
-const ActionButton: React.FC<ActionButtonProps> = ({ item }) => (
+const ActionButton: React.FC<ActionButtonProps> = ({ item, navigation }) => (
   <TouchableOpacity
-    onPress={item.action}
+    onPress={() => item.action(navigation)} // Ejecutamos la acción con el objeto navigation
     className="bg-white rounded-xl shadow-md p-4 items-center justify-center border border-gray-100 active:bg-gray-50 m-1"
     style={{
       width: ITEM_WIDTH,
@@ -70,89 +124,106 @@ const ActionButton: React.FC<ActionButtonProps> = ({ item }) => (
   </TouchableOpacity>
 );
 
-const UserModal: React.FC<UserModalProps> = ({ visible, onClose, onLogout }) => (
-  <Modal
-    animationType="fade"
-    transparent={true}
-    visible={visible}
-    onRequestClose={onClose}
-  >
-    <TouchableOpacity 
-      style={styles.centeredView} 
-      activeOpacity={1}
-      onPressOut={onClose}
+const UserModal: React.FC<UserModalProps> = ({ visible, onClose, onLogout, userInfo }) => {
+  const userRole = userInfo?.role === 'admin' ? 'Administrador' : 'Usuario en Piso';
+  const displayEmail = userInfo?.email || 'N/A';
+  const displayName = `${userInfo?.first_name || ''} ${userInfo?.last_name || ''}`.trim() || 'Usuario Desconocido';
+  const displayUID = userInfo?.uid || 'ID no disponible';
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
     >
-      <View 
-        className="bg-white rounded-t-3xl p-6 shadow-lg w-full absolute bottom-0"
-        onTouchStart={(e) => e.stopPropagation()} 
+      <TouchableOpacity 
+        style={styles.centeredView} 
+        activeOpacity={1}
+        onPressOut={onClose}
       >
-        <View className="w-16 h-1 bg-gray-300 rounded-full self-center mb-5" />
-
-        <View className="mb-6">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            <Text className="font-bold">Usuario:</Text> {userData.username}
-          </Text>
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            <Text className="font-bold">Nombre:</Text> {userData.name}
-          </Text>
-          <Text className="text-lg font-semibold text-gray-800">
-            <Text className="font-bold">Email:</Text> {userData.email}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          className="bg-black py-4 rounded-xl flex-row justify-center items-center"
-          onPress={onLogout}
+        <View 
+          className="bg-white rounded-t-3xl p-6 shadow-lg w-full absolute bottom-0"
+          onTouchStart={(e) => e.stopPropagation()} 
         >
-          <Text className="text-white text-lg font-semibold mr-2">
-            Cerrar sesión
-          </Text>
-          <Icon name="log-out-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  </Modal>
-);
+          <View className="w-16 h-1 bg-gray-300 rounded-full self-center mb-5" />
+
+          <View className="mb-6">
+            <Text className="text-lg font-semibold text-gray-800 mb-2">
+              <Text className="font-bold">Rol:</Text> {userRole}
+            </Text>
+            <Text className="text-lg font-semibold text-gray-800 mb-2">
+              <Text className="font-bold">Nombre:</Text> {displayName}
+            </Text>
+            <Text className="text-lg font-semibold text-gray-800 mb-2">
+              <Text className="font-bold">Email:</Text> {displayEmail}
+            </Text>
+             <Text className="text-sm text-gray-500 mt-2">
+              <Text className="font-bold">UID:</Text> {displayUID}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            className="bg-black py-4 rounded-xl flex-row justify-center items-center"
+            onPress={onLogout}
+          >
+            <Text className="text-white text-lg font-semibold mr-2">
+              Cerrar sesión
+            </Text>
+            <Icon name="log-out-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
 
 // --- PANTALLA PRINCIPAL ---
 
 const AdminScreen: React.FC = () => {
-  const navigation = useNavigation<NavigationProp<StackExploreParams>>()
+  const navigation = useNavigation<AdminScreenNavigationProp>(); // Inicializamos la navegación tipada
   const [modalVisible, setModalVisible] = useState(false);
   const { signOut } = useAuth();
-  const DATA: ActionItem[] = [
-    { 
-        id: '1', 
-        iconName: 'person-add-outline', 
-        label: 'Crear Usuario', 
-        action: () => navigation.navigate("Register", {
-            typeOfForm: "register",
-            userInfo: null
-        }) 
-    },
-    { id: '2', iconName: 'scan-circle-outline', label: 'Escanear Equipo', action: () => console.log('Escanear Equipo') },
-    { id: '3', iconName: 'list-outline', label: 'Inventario', action: () => console.log('Inventario') },
-    { id: '4', iconName: 'checkbox-outline', label: 'Asignación', action: () => console.log('Asignación') },
-    { id: '5', iconName: 'cloud-upload-outline', label: 'Subir Datos', action: () => console.log('Subir Datos') },
-    { id: '6', iconName: 'stats-chart-outline', label: 'Ver Reportes', action: () => console.log('Ver Reportes') },
-    { id: '7', iconName: 'settings-outline', label: 'Configuración', action: () => console.log('Configuración') },
-    { id: '8', iconName: 'mail-outline', label: 'Notificaciones', action: () => console.log('Notificaciones') },
-    ];
-
+  const { userInfo, isLoadingProfile } = useUserProfile();
 
   const handleLogout = () => {
-    console.log('Cerrar sesión');
+    console.log('Cerrar sesión iniciado.');
     setModalVisible(false);
-    signOut()
+    signOut(); 
   };
+
+  const availableActions = useMemo(() => {
+      const allActions = [...ADMIN_ACTIONS, ...USER_ACTIONS];
+      const role = userInfo?.role;
+
+      if (role === 'admin') {
+          return allActions.filter(action => action.role === 'admin');
+      } else if (role === 'user') {
+          return allActions.filter(action => action.role === 'user');
+      }
+      return []; 
+  }, [userInfo?.role]);
+
+  if (isLoadingProfile || !userInfo) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center bg-gray-50">
+        <Text className="text-xl font-medium text-gray-600">
+          Cargando perfil de AssetTrack...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  const greetingName = userInfo.first_name || 'Usuario';
+  const userRoleDisplay = userInfo.role === 'admin' ? 'Administrador' : 'Usuario en Piso';
 
   return (
     <SafeAreaView className="flex-1 bg-white pt-10"> 
       <FlatList
-        data={DATA}
+        data={availableActions}
         keyExtractor={(item) => item.id}
         numColumns={2}
-        renderItem={({ item }) => <ActionButton item={item} />}
+        renderItem={({ item }) => <ActionButton item={item} navigation={navigation} />} // Pasamos el objeto navigation
         contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}
         
         ListHeaderComponent={
@@ -160,10 +231,10 @@ const AdminScreen: React.FC = () => {
             <View className="flex-row justify-between items-center mb-6 px-5">
               <View>
                 <Text className="text-3xl font-bold text-gray-900">
-                  Hola, John 👋
+                  Hola, {greetingName} 👋
                 </Text>
                 <Text className="text-lg text-gray-500 mt-1">
-                  Administrador
+                  {userRoleDisplay}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -177,7 +248,7 @@ const AdminScreen: React.FC = () => {
             <View className="flex-row items-center border border-gray-300 rounded-lg p-3 mb-8 bg-gray-50 mx-5">
               <TextInput
                 className="flex-1 text-base text-gray-800"
-                placeholder="HP"
+                placeholder="Buscar equipo por HP / Serial"
                 placeholderTextColor="#9ca3af"
               />
               <Icon name="search" size={24} color="#6b7280" />
@@ -195,6 +266,7 @@ const AdminScreen: React.FC = () => {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onLogout={handleLogout}
+        userInfo={userInfo}
       />
     </SafeAreaView>
   );

@@ -2,11 +2,6 @@ import React, { useState } from 'react'
 import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useAppTheme } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
-import { usePhotoManagement } from '../../shared/hooks/usePhotoManagement'; 
-import { PhotoFile } from 'react-native-vision-camera';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { StackExploreParams } from '../../routes/StackExplore';
-import { useSecurity } from '../../shared/hooks/useSecurity';
 import { useAuth } from '../../shared/hooks/useAuth';
 /* @ts-ignore */
 import Logo from '../../assets/logo.png';

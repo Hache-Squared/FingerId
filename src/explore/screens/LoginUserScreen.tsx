@@ -7,22 +7,21 @@ import { PhotoFile } from 'react-native-vision-camera';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StackExploreParams } from '../../routes/StackExplore';
 import { useSecurity } from '../../shared/hooks/useSecurity';
+import { useAuth } from '../../shared/hooks/useAuth';
 /* @ts-ignore */
 import Logo from '../../assets/logo.png';
 
 const LoginUserScreen = () => {
   const { primaryColor, secondaryColor } = useAppTheme()
-  const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
-  const [openSuperModal, setOpenSuperModal] = useState(false)
-  const {isLocked, startUnlockingState, startUsingSuperPass} = useSecurity()
+  const { signInWithEmail, loading } = useAuth();
 
 
   const handleAuth = async() => {
-    const res = await startUnlockingState();
-    if(!res){
-    }
+    let _username = username?.trim();
+    let _password = password?.trim();
+    await signInWithEmail(_username, _password);
   }
 
   return (
@@ -63,7 +62,7 @@ const LoginUserScreen = () => {
               className='w-full rounded-full p-1 flex flex-row gap-2 self-center items-center justify-center'
               style={{backgroundColor: primaryColor}}
               >
-              <Text className='font-bold text-lg text-white text-left'>Iniciar Sesión</Text>
+              <Text className='font-bold text-lg text-white text-left'>{loading ? 'Cargando...' : 'Iniciar Sesión'}</Text>
               <Icon name='enter-outline' size={50} color={"#fff"}/>
             </TouchableOpacity>
             

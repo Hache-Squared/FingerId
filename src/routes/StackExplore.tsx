@@ -5,6 +5,7 @@ import { LoginUserScreen } from '../explore/screens/LoginUserScreen';
 import { RegistersByUserScreen } from '../explore/screens/RegistersByUserScreen';
 import { useSecurity } from '../shared/hooks/useSecurity';
 import { CreatorsScreen } from '../explore/screens/CreatorsScreen';
+import { useAuth } from '../shared/hooks/useAuth';
 
 export type StackExploreParams = {
   ExploreContent: undefined,
@@ -22,6 +23,7 @@ export type StackExploreParams = {
 const Stack = createStackNavigator<StackExploreParams>();
 export const StackExplore = () => {
   const { isLocked, startLockingState } = useSecurity();
+  const { user } = useAuth();
   return (
     <Stack.Navigator
     screenOptions={{
@@ -29,7 +31,7 @@ export const StackExplore = () => {
     }}
     >
       {
-        isLocked ? (
+        !user ? (
           <Stack.Screen name="LoginUserScreen" component={LoginUserScreen} />
         ) : (
           <>

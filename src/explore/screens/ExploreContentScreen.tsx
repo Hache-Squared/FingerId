@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import { PhotoInfo, usePhotoManagement } from '../../shared/hooks/usePhotoManagement'
 import { useSecurity } from '../../shared/hooks/useSecurity'
+import { useAuth } from '../../shared/hooks/useAuth'
 
 const ExploreContentScreen = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
@@ -14,6 +15,7 @@ const ExploreContentScreen = () => {
   const { listUsersWithProfilePhotos } = usePhotoManagement()
   const [data, setData] = useState<{ userId: string;userName: string; profilePhoto: PhotoInfo | null }[]>([]);
   const { isLocked, startLockingState } = useSecurity();
+  const { signOut } = useAuth();
   useFocusEffect(
     React.useCallback(() => {
       // Do something when the screen is focused
@@ -73,7 +75,7 @@ const ExploreContentScreen = () => {
 
       />
      </View>
-     <TouchableOpacity onPress={() => startLockingState()} className=' absolute flex flex-row flex-nowrap items-center justify-center bottom-10 left-8 px-2 py-1 rounded-full bg-gray-200'>
+     <TouchableOpacity onPress={() => signOut()} className=' absolute flex flex-row flex-nowrap items-center justify-center bottom-10 left-8 px-2 py-1 rounded-full bg-gray-200'>
         <Icon name='lock-closed-outline' size={25} color={"#111"} />
         <Text className='m-3 text-black font-bold'>Bloquear</Text>
       </TouchableOpacity>

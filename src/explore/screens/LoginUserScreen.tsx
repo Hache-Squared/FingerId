@@ -9,6 +9,7 @@ import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StackExploreParams } from '../../routes/StackExplore';
 import { useSecurity } from '../../shared/hooks/useSecurity';
 import { CameraLogin, ResponseAuth } from '../views/CameraLogin';
+import Logo from '../../assets/logo.png';
 
 const LoginUserScreen = () => {
   const { primaryColor, secondaryColor } = useAppTheme()
@@ -36,6 +37,7 @@ const LoginUserScreen = () => {
   return (
     <>
       <View className='flex-1 my-3 flex items-center justify-center'>
+          <Image source={Logo} style={styles.image} />
           <Text className='w-full text-center font-bold text-black text-2xl'>AssetTrack</Text>
           <View className='w-11/12 self-center  rounded-lg p-3'>
             <Text className='font-bold text-lg text-black text-left'>Usuario:</Text>

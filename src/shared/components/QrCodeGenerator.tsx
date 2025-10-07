@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
-// Se asume que react-native-svg está instalado y enlazado correctamente
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
+// LIBRERÍAS CLAVE
+import ViewShot from 'react-native-view-shot'; // Para tomar la captura de pantalla
+import Share from 'react-native-share'; // PARA COMPARTIR/IMPRIMIR
 import QRCode from 'react-native-qrcode-svg'; 
 import Icon from 'react-native-vector-icons/Ionicons'; 
 
@@ -11,8 +13,8 @@ interface QrCodeGeneratorProps {
 }
 
 /**
- * Componente reutilizable para generar y mostrar un Código QR.
- * Utiliza una exportación nombrada para coincidir con la importación en la pantalla.
+ * Componente reutilizable para generar, mostrar y COMPARTIR/IMPRIMIR un Código QR.
+ * Utiliza react-native-share como alternativa a react-native-print.
  */
 export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({ 
   assetId, 
@@ -20,53 +22,114 @@ export const QrCodeGenerator: React.FC<QrCodeGeneratorProps> = ({
   size = 200 
 }) => {
   
-  // Función simulada para imprimir el código
-  const handlePrint = () => {
-    Alert.alert(
-      "Impresión Solicitada",
-      `Preparando para imprimir el Código QR.\nContenido del código (ID): ${assetId}`,
-      [
-        { text: "Cancelar" },
-        { text: "Imprimir (Simulado)", onPress: () => console.log('Simulación de impresión iniciada') }
-      ]
-    );
-  };
-
+  // Referencia al View principal que queremos capturar para la impresión
+  const viewShotRef = useRef<ViewShot>(null); 
+  const [isProcessing, setIsProcessing] = React.useState(false); // Usamos 'Processing' en general
   const qrSize = Math.max(150, size); 
 
+  // Función REAL para compartir o imprimir el código
+  const handlePrint = async () => {
+    if (!viewShotRef.current) {
+      Alert.alert("Error", "No se pudo obtener la referencia del componente para la captura.");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // 1. CAPTURA DEL COMPONENTE (ViewShot)
+      // Capturamos el contenido como una imagen (URI local en formato BASE64)
+      /* @ts-ignore */
+      const uri = await viewShotRef.current.capture?.({
+        format: "png",
+        quality: 1.0,
+        result: "data-uri", // Pedimos el resultado como Base64 URI
+      });
+      
+      if (!uri) {
+        throw new Error("Fallo al capturar la imagen.");
+      }
+
+      // 2. PREPARAR EL CONTENIDO PARA COMPARTIR/IMPRIMIR
+      // El URI Base64 se puede enviar directamente para compartir.
+      const shareOptions = {
+        title: `Código QR Activo: ${assetName}`,
+        message: `Activo: ${assetName} (ID: ${assetId}). Escanee para ver detalles.`,
+        url: uri, // URI con la imagen del QR en Base64
+        type: 'image/png', // Tipo de contenido
+      };
+
+      // 3. ABRIR DIÁLOGO NATIVO DE COMPARTIR/EXPORTAR
+      // El diálogo nativo incluye opciones como 'Guardar Imagen', 'Imprimir', 'Enviar por Email', etc.
+      await Share.open(shareOptions);
+      
+      // No mostramos un Alert, ya que el diálogo nativo ya da feedback.
+
+    } catch (error) {
+      // Si el usuario cancela la acción, 'react-native-share' lanza un error, lo ignoramos.
+      
+        console.error("Error al compartir/imprimir:", error);
+        //Alert.alert("Error de Proceso", "Hubo un problema al intentar generar el archivo. Asegúrate de que react-native-share se instaló correctamente.");
+      
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Código QR del Activo</Text>
+    <>
+    <ViewShot 
+      ref={viewShotRef} 
+      options={{ format: "png", quality: 1.0 }} 
+      style={styles.captureArea}
+    >
+      {/* Contenido que se va a imprimir */}
+      <View style={styles.container}>
+        <Text style={styles.title}>Código QR del Activo</Text>
 
-      {/* Área de Generación del Código QR */}
-      <View style={[styles.qrCodeBox, { width: qrSize, height: qrSize }]}>
-        <QRCode
-          value={assetId} // El contenido del QR es el Asset ID
-          size={qrSize - 20} 
-          color="#1f2937"
-          backgroundColor="white"
-        />
+        <View style={[styles.qrCodeBox, { width: qrSize, height: qrSize }]}>
+          <QRCode
+            value={assetId}
+            size={qrSize - 20} 
+            color="#1f2937"
+            backgroundColor="white"
+          />
+        </View>
+
+        <Text style={styles.idLabel}>ID del Activo:</Text>
+        <Text style={styles.idValue}>{assetId}</Text>
+        
+        <Text style={styles.nameLabel}>Nombre:</Text>
+        <Text style={styles.nameValue}>{assetName}</Text>
       </View>
-      {/* Fin Área de Generación del Código */}
+    </ViewShot>
 
-      <Text style={styles.idLabel}>ID del Activo:</Text>
-      <Text style={styles.idValue}>{assetId}</Text>
-      
-      <Text style={styles.nameLabel}>Nombre:</Text>
-      <Text style={styles.nameValue}>{assetName}</Text>
-      
-      <TouchableOpacity 
-        style={styles.printButton}
-        onPress={handlePrint}
-      >
-        <Icon name="print-outline" size={20} color="#fff" style={styles.iconMargin} />
-        <Text style={styles.printButtonText}>Imprimir Código</Text>
-      </TouchableOpacity>
-    </View>
+    {/* BOTÓN DE ACCIÓN (fuera del ViewShot) */}
+    <TouchableOpacity 
+      style={[styles.printButton, isProcessing && styles.printButtonDisabled]}
+      onPress={handlePrint}
+      disabled={isProcessing}
+    >
+      {isProcessing ? (
+        <ActivityIndicator color="#fff" size="small" />
+      ) : (
+        <>
+          <Icon name="share-social-outline" size={20} color="#fff" style={styles.iconMargin} />
+          <Text style={styles.printButtonText}>Generar Código y Compartir</Text>
+        </>
+      )}
+    </TouchableOpacity>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  captureArea: {
+    backgroundColor: '#fff', 
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20, 
+  },
   container: {
     padding: 25,
     alignItems: 'center',
@@ -135,11 +198,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 20,
     width: '100%',
+    maxWidth: 400,
     justifyContent: 'center',
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3 },
       android: { elevation: 5 },
     }),
+  },
+  printButtonDisabled: {
+    backgroundColor: '#ccc',
   },
   printButtonText: {
     color: '#fff',

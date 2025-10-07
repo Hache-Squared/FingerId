@@ -7,9 +7,13 @@ import { useSecurity } from '../shared/hooks/useSecurity';
 import { CreatorsScreen } from '../explore/screens/CreatorsScreen';
 import { useAuth } from '../shared/hooks/useAuth';
 import { AdminScreen } from '../explore/screens/AdminScreen';
+import { AssetFormScreen } from '../explore/screens/AssetFormScreen';
+import { AssetListScreen } from '../explore/screens/AssetListScreen';
 
 export type StackExploreParams = {
   Admin: undefined,
+  AssetForm: undefined,
+  AssetListScreen: undefined,
   ExploreContent: undefined,
   RegistersByUser: {
     id: string,
@@ -41,6 +45,8 @@ export const StackExplore = () => {
             <Stack.Screen name="Register" component={RegisterUserScreen} />
             <Stack.Screen name="RegistersByUser" component={RegistersByUserScreen} />
             <Stack.Screen name="CreatorsScreen" component={CreatorsScreen} />
+             <Stack.Screen name="AssetForm" component={AssetFormScreen} />
+             <Stack.Screen name="AssetListScreen" component={AssetListScreen} />
           </>    
         )
       }

@@ -44,8 +44,15 @@ const ADMIN_ACTIONS: ActionItem[] = [
   { 
     id: '1', 
     iconName: 'document-text-outline', 
-    label: 'Inventario (Assets)', 
-    action: (navigation) => console.log('Navegar a AssetsList (Pendiente)'), 
+    label: 'Creación De Inventario (Assets)', 
+    action: (navigation) => navigation.navigate("AssetForm"), 
+    role: 'admin' 
+  },
+  { 
+    id: '100', 
+    iconName: 'document-text-outline', 
+    label: 'Listado De Inventario (Assets)', 
+    action: (navigation) => navigation.navigate("AssetListScreen"), 
     role: 'admin' 
   },
   { 
@@ -77,18 +84,10 @@ const ADMIN_ACTIONS: ActionItem[] = [
     action: (navigation) => console.log('Navegar a Gestión Mantenimiento (Pendiente)'), 
     role: 'admin' 
   },
-  { 
-    id: '6', 
-    iconName: 'settings-outline', 
-    label: 'Configuración App', 
-    action: (navigation) => console.log('Navegar a Configuración (Pendiente)'), 
-    role: 'admin' 
-  },
 ];
 
 const USER_ACTIONS: ActionItem[] = [
     { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => console.log('Navegar a Mis Equipos (Pendiente)'), role: 'user' },
-    { id: '8', iconName: 'scan-circle-outline', label: 'Escanear Equipo', action: (navigation) => console.log('Navegar a Escáner (Pendiente)'), role: 'user' },
     { id: '9', iconName: 'build-outline', label: 'Reportar Mantenimiento', action: (navigation) => console.log('Navegar a Reporte Mantenimiento (Pendiente)'), role: 'user' },
 ];
 
@@ -196,6 +195,7 @@ const AdminScreen: React.FC = () => {
       const allActions = [...ADMIN_ACTIONS, ...USER_ACTIONS];
       const role = userInfo?.role;
 
+      return allActions;
       if (role === 'admin') {
           return allActions.filter(action => action.role === 'admin');
       } else if (role === 'user') {
@@ -204,7 +204,7 @@ const AdminScreen: React.FC = () => {
       return []; 
   }, [userInfo?.role]);
 
-  if (isLoadingProfile || !userInfo) {
+  if (!userInfo) {
     return (
       <SafeAreaView className="flex-1 justify-center items-center bg-gray-50">
         <Text className="text-xl font-medium text-gray-600">

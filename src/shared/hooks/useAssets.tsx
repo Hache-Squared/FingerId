@@ -221,6 +221,33 @@ export const useAssets = () => {
   }, [fetchData]);
 
 
+  const findAssetByAssetId = useCallback(async (scannedId: string): Promise<Asset | null> => {
+    setLocalLoading(true);
+    try {
+      // 1. Cargar toda la colección de activos
+      const fetchedObject = await fetchData(ASSETS_RTDB_PATH);
+      
+      // 2. Procesar el objeto crudo a un array de Assets (inyectando el assetId correctamente)
+      const allAssets = processFetchedAssets(fetchedObject as any);
+      
+      // 3. Buscar el activo en el array que coincida con el scannedId
+      const foundAsset = allAssets.find(asset => asset.assetId === scannedId);
+
+      if (foundAsset) {
+        return foundAsset;
+      }
+      
+      return null;
+
+    } catch (e) {
+      console.error("Error finding asset by ID in RTDB:", e);
+      return null;
+    } finally {
+      setLocalLoading(false);
+    }
+  }, [fetchData, processFetchedAssets]); // Dependencias: fetchData y la utilidad de procesamiento
+
+
   return { 
     assets, 
     loading, 
@@ -230,5 +257,6 @@ export const useAssets = () => {
     updateAsset, 
     createAsset, 
     addLogToAsset,
+    findAssetByAssetId
   };
 };

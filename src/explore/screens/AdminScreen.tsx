@@ -70,7 +70,7 @@ const ADMIN_ACTIONS: ActionItem[] = [
     id: '3', 
     iconName: 'scan-circle-outline', 
     label: 'Escanear Equipo', 
-    action: (navigation) => console.log('Navegar a Escáner (Pendiente)'), 
+    action: (navigation) => navigation.navigate("ScanAssetScreen"), 
     role: 'admin' 
   },
   { 

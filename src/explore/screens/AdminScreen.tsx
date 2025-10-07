@@ -77,7 +77,14 @@ const ADMIN_ACTIONS: ActionItem[] = [
     id: '4', 
     iconName: 'list-outline', 
     label: 'Ver Asignaciones', 
-    action: (navigation) => console.log('Navegar a Asignaciones (Pendiente)'), 
+    action: (navigation) => navigation.navigate("UserAssetListScreen"), 
+    role: 'admin' 
+  },
+  { 
+    id: '40', 
+    iconName: 'list-outline', 
+    label: 'Crear Asignación', 
+    action: (navigation) => navigation.navigate("AssignmentFormScreen"), 
     role: 'admin' 
   },
   { 
@@ -87,6 +94,8 @@ const ADMIN_ACTIONS: ActionItem[] = [
     action: (navigation) => console.log('Navegar a Gestión Mantenimiento (Pendiente)'), 
     role: 'admin' 
   },
+  { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => console.log('Navegar a Mis Equipos (Pendiente)'), role: 'admin' },
+    { id: '9', iconName: 'build-outline', label: 'Reportar Mantenimiento', action: (navigation) => console.log('Navegar a Reporte Mantenimiento (Pendiente)'), role: 'admin' },
 ];
 
 const USER_ACTIONS: ActionItem[] = [

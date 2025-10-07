@@ -43,6 +43,8 @@ export interface UserProfileData {
 export const useUsers = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allUsers, setAllUsers] = useState<UserProfileData[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   /**
    * Guarda los datos extendidos del perfil en la Realtime Database.
@@ -143,5 +145,43 @@ export const useUsers = () => {
     }
   }, []);
 
-  return { registerUser, signInUser, getUserProfile, loading, error };
+
+  /**
+   * Carga la lista completa de perfiles de usuario desde RTDB (consulta única).
+   */
+  const fetchAllUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const usersRef = rtdbRef(db, USER_PROFILES_RTDB_PATH);
+      const snapshot = await rtdbGet(usersRef);
+
+      let usersArray: UserProfileData[] = [];
+      if (snapshot.exists()) {
+        const usersObject: Record<string, UserProfileData> = snapshot.val();
+        // Convertimos el objeto de usuarios a un array
+        usersArray = Object.values(usersObject);
+      }
+      setAllUsers(usersArray);
+      return usersArray;
+    } catch (err) {
+      console.error("Error al obtener todos los perfiles de usuario:", err);
+      setAllUsers([]);
+      // No lanzamos error aquí, solo lo registramos
+      return []; 
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
+
+
+   return { 
+    registerUser, 
+    signInUser, 
+    getUserProfile, 
+    loading: loading || loadingUsers, 
+    error,
+    allUsers, // <--- LISTA DE USUARIOS
+    fetchAllUsers, // <--- FUNCIÓN PARA CARGAR LA LISTA
+    loadingUsers,
+  };
 };

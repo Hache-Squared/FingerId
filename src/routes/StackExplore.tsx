@@ -9,10 +9,14 @@ import { useAuth } from '../shared/hooks/useAuth';
 import { AdminScreen } from '../explore/screens/AdminScreen';
 import { AssetFormScreen } from '../explore/screens/AssetFormScreen';
 import { AssetListScreen } from '../explore/screens/AssetListScreen';
+import { AssignmentFormScreen } from '../explore/screens/AssignmentFormScreen';
+import { UserAssetListScreen } from '../explore/screens/UserAssetListScreen';
 
 export type StackExploreParams = {
   Admin: undefined,
   AssetForm: undefined,
+  AssignmentFormScreen: undefined,
+  UserAssetListScreen: undefined,
   AssetListScreen: undefined,
   ExploreContent: undefined,
   RegistersByUser: {
@@ -47,6 +51,8 @@ export const StackExplore = () => {
             <Stack.Screen name="CreatorsScreen" component={CreatorsScreen} />
              <Stack.Screen name="AssetForm" component={AssetFormScreen} />
              <Stack.Screen name="AssetListScreen" component={AssetListScreen} />
+             <Stack.Screen name="AssignmentFormScreen" component={AssignmentFormScreen} />
+             <Stack.Screen name="UserAssetListScreen" component={UserAssetListScreen} />
           </>    
         )
       }

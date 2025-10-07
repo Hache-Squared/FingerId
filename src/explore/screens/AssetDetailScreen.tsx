@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { 
   View, Text, SafeAreaView, TouchableOpacity, StyleSheet, 
   ScrollView, ActivityIndicator, FlatList,
-  Alert
+  Alert, Modal
 } from 'react-native';
 // Uso de las librerías correctas de React Native
 import Icon from 'react-native-vector-icons/Ionicons'; 
@@ -15,8 +15,11 @@ import { useAssets } from '../../shared/hooks/useAssets';
 import { useUsers } from '../../shared/hooks/useUsers'; 
 import { StackExploreParams } from '../../routes/StackExplore';
 
-// --- DEFINICIONES DE TIPOS (DEBE COINCIDIR CON TU ARCHIVO DE TIPOS) ---
+// Importación del componente de generación de QR
+// AJUSTA ESTA RUTA si es diferente en tu proyecto
+import { QrCodeGenerator } from '../../shared/components/QrCodeGenerator'; 
 
+// --- DEFINICIONES DE TIPOS (DEBE COINCIDIR CON TU ARCHIVO DE TIPOS) ---
 // Tipo de la entrada del log
 export interface AssetLogEntry {
   timestamp: number;
@@ -57,25 +60,25 @@ const AssetDetailScreen: React.FC = () => {
   const { assetId } = useRoute<RouteProp<StackExploreParams, 'AssetDetailScreen'>>().params;
 
   const { getAssetById, loading: assetLoading } = useAssets();
-  // CORRECCIÓN CLAVE: Obtenemos getUserProfile de useUsers, que es la fuente correcta.
   const { getUserProfile } = useUsers(); 
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [assignedUser, setAssignedUser] = useState<{ displayName: string, email: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'logs' | 'assignment'>('assignment'); 
+  
+  // NUEVO ESTADO: Controla la visibilidad del Modal del QR
+  const [isQrModalVisible, setIsQrModalVisible] = useState(false);
 
   const isLoading = assetLoading || !asset;
 
   // 1. Cargar el activo por ID
   const loadAsset = useCallback(async () => {
-    // NOTA: Asume que getAssetById devuelve el objeto Asset completo
     const fetchedAsset = await getAssetById(assetId); 
     setAsset(fetchedAsset as Asset);
   }, [assetId, getAssetById]);
 
   // 2. Cargar datos de la persona asignada
   const loadAssignedUser = useCallback(async (uid: string) => {
-    // CORRECCIÓN: Usamos getUserProfile del hook useUsers
     const userProfile = await getUserProfile(uid);
     if (userProfile) {
       setAssignedUser({
@@ -85,7 +88,7 @@ const AssetDetailScreen: React.FC = () => {
     } else {
       setAssignedUser(null);
     }
-  }, [getUserProfile]); // Dependencia actualizada: usamos getUserProfile
+  }, [getUserProfile]);
 
   // Effect para la carga inicial del activo
   useEffect(() => {
@@ -99,7 +102,6 @@ const AssetDetailScreen: React.FC = () => {
     } else {
       setAssignedUser(null);
     }
-    // Aseguramos que loadAssignedUser es estable con useCallback
   }, [asset, loadAssignedUser]); 
 
 
@@ -148,14 +150,12 @@ const AssetDetailScreen: React.FC = () => {
               <DataRow label="Email" value={assignedUser.email} />
             </>
           ) : (
-            // Muestra indicador de carga solo si el activo está asignado pero el perfil aún no carga
             <ActivityIndicator size="small" color="#4f46e5" style={styles.loadingMargin}/>
           )}
 
           {/* Botón de acción: Desasignar */}
           <TouchableOpacity 
             style={styles.unassignButton}
-            // En lugar de Alert, puedes navegar a una pantalla de acción real
             onPress={() => navigation.navigate("UserAssetListScreen")}
           >
             <Text style={styles.unassignButtonText}>DESASIGNAR EQUIPO</Text>
@@ -171,7 +171,6 @@ const AssetDetailScreen: React.FC = () => {
         <Text style={styles.unassignedTitle}>Activo No Asignado</Text>
         <TouchableOpacity 
             style={styles.assignButton}
-            // CORRECCIÓN: Navegación real a la pantalla de asignación
             onPress={() => navigation.navigate("AssignmentFormScreen")}
           >
             <Text style={styles.assignButtonText}>ASIGNAR A USUARIO</Text>
@@ -182,7 +181,6 @@ const AssetDetailScreen: React.FC = () => {
 
   // Pestaña 2: Lista de Logs
   const LogsTab = () => {
-    // Muestra los logs en orden cronológico inverso (el más nuevo primero)
     const sortedLogs = [...(asset?.logs || [])].sort((a, b) => b?.timestamp - a?.timestamp);
 
     return (
@@ -215,7 +213,6 @@ const AssetDetailScreen: React.FC = () => {
     );
   }
   
-  // Manejo de caso donde no se encuentra el activo
   if (!asset) {
     return (
       <SafeAreaView style={[styles.flex1, styles.loadingContainer]}>
@@ -232,13 +229,11 @@ const AssetDetailScreen: React.FC = () => {
   }
 
 
-  // Extraemos la información relevante (sabemos que asset no es null aquí)
   const { 
     asset_name, serial_number, description, status, asset_type, 
     make, model, approx_cost, color, important_data, created_at
   } = asset;
 
-  // Helper para el color del estado
   const statusColor = status === 'active' ? '#10b981' : status === 'in_maintenance' ? '#f59e0b' : '#ef4444';
   const statusBg = status === 'active' ? '#d1fae5' : status === 'in_maintenance' ? '#fef3c7' : '#fee2e2';
 
@@ -246,7 +241,7 @@ const AssetDetailScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.flex1}>
       
-      {/* HEADER con Botón de Retroceso y Opciones */}
+      {/* HEADER con Botón de Retroceso y COMPARTIR/IMPRIMIR */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Icon name="arrow-back-outline" size={28} color="#1f2937" />
@@ -254,9 +249,12 @@ const AssetDetailScreen: React.FC = () => {
         <Text style={styles.headerTitle}>
           Detalle del Activo
         </Text>
-        {/* Menu de opciones */}
-        <TouchableOpacity style={styles.headerButton}>
-          <Icon name="ellipsis-vertical-sharp" size={28} color="#1f2937" />
+        {/* Botón de Imprimir/Compartir (Abre el Modal del QR) */}
+        <TouchableOpacity 
+          style={styles.headerButton}
+          onPress={() => setIsQrModalVisible(true)} // ABRIR MODAL
+        >
+          <Icon name="share-social-outline" size={28} color="#4f46e5" />
         </TouchableOpacity>
       </View>
 
@@ -323,6 +321,36 @@ const AssetDetailScreen: React.FC = () => {
         </View>
 
       </ScrollView>
+
+      {/* MODAL DE GENERACIÓN DE QR */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isQrModalVisible}
+        onRequestClose={() => {
+          setIsQrModalVisible(!isQrModalVisible);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Botón de Cerrar */}
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setIsQrModalVisible(false)}
+            >
+              <Icon name="close-circle-outline" size={30} color="#ef4444" />
+            </TouchableOpacity>
+
+            {/* Componente Generador de QR */}
+            <QrCodeGenerator 
+              assetId={asset.assetId} 
+              assetName={asset.asset_name} 
+              size={250} // Tamaño un poco más grande para el modal
+            />
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -365,7 +393,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
-    marginRight: 36, // Espacio para el botón de opciones
+    marginRight: 36, 
   },
   scrollContent: {
     padding: 16,
@@ -580,6 +608,32 @@ const styles = StyleSheet.create({
     color: '#374151',
     lineHeight: 20,
   },
+  
+  // MODAL STYLES
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    width: '90%',
+    maxWidth: 450,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 10,
+    padding: 5,
+  }
 });
 
 export default AssetDetailScreen;

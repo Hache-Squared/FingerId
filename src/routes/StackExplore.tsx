@@ -11,6 +11,7 @@ import { AssetFormScreen } from '../explore/screens/AssetFormScreen';
 import { AssetListScreen } from '../explore/screens/AssetListScreen';
 import { AssignmentFormScreen } from '../explore/screens/AssignmentFormScreen';
 import { UserAssetListScreen } from '../explore/screens/UserAssetListScreen';
+import AssetDetailScreen from '../explore/screens/AssetDetailScreen';
 
 export type StackExploreParams = {
   Admin: undefined,
@@ -18,6 +19,9 @@ export type StackExploreParams = {
   AssignmentFormScreen: undefined,
   UserAssetListScreen: undefined,
   AssetListScreen: undefined,
+  AssetDetailScreen: {
+    assetId: string 
+  },
   ExploreContent: undefined,
   RegistersByUser: {
     id: string,
@@ -53,6 +57,7 @@ export const StackExplore = () => {
              <Stack.Screen name="AssetListScreen" component={AssetListScreen} />
              <Stack.Screen name="AssignmentFormScreen" component={AssignmentFormScreen} />
              <Stack.Screen name="UserAssetListScreen" component={UserAssetListScreen} />
+             <Stack.Screen name="AssetDetailScreen" component={AssetDetailScreen} />
           </>    
         )
       }

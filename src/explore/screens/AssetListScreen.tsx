@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { useAssets, Asset } from '../../shared/hooks/useAssets';
+import { useAssets } from '../../shared/hooks/useAssets';
+import {Asset} from '../../types/Asset.types'
 import { useUserProfile } from '../../shared/hooks/useUserProfile'; // Necesitamos el perfil/UID del usuario
 
 // --- Variables de Simulación ---

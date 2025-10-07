@@ -5,16 +5,19 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; 
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { StackExploreParams } from '../../routes/StackExplore'; // Importación de tipos de navegación
+import { StackExploreParams } from '../../routes/StackExplore'; 
 import { useAuth } from '../../shared/hooks/useAuth'; 
+// Importamos el hook que ya no usa listener
 import { useUserProfile } from '../../shared/hooks/useUserProfile'; 
+// Importamos el tipo correcto de RTDB
+import { UserProfileData } from '../../shared/hooks/useUsers'; 
 
 const { width } = Dimensions.get('window');
-const ITEM_WIDTH = (width - 5 * 2 * 2 - 4) / 2; 
+// Ajuste de ancho para 2 columnas con margen
+const ITEM_WIDTH = (width - 20 - 16) / 2; 
 
 // --- TIPOS ---
 
-// Utilizamos el tipo de navegación para asegurar que las rutas existen
 type AdminScreenNavigationProp = NavigationProp<StackExploreParams, 'Admin'>;
 
 
@@ -22,20 +25,21 @@ interface ActionItem {
   id: string;
   iconName: string;
   label: string;
-  action: (navigation: AdminScreenNavigationProp) => void; // La acción recibe navigation
+  action: (navigation: AdminScreenNavigationProp) => void; 
   role: 'admin' | 'user'; 
 }
 
 interface ActionButtonProps extends TouchableOpacityProps {
   item: ActionItem;
-  navigation: AdminScreenNavigationProp; // Pasamos navigation al botón
+  navigation: AdminScreenNavigationProp; 
 }
 
 interface UserModalProps {
   visible: boolean;
   onClose: () => void;
   onLogout: () => void;
-  userInfo: Awaited<ReturnType<typeof useUserProfile>>['userInfo']; 
+  // Usamos el tipo directo de la data de RTDB
+  userInfo: UserProfileData | null; 
 }
 
 // --- DATOS DE ACCIONES ---
@@ -59,7 +63,6 @@ const ADMIN_ACTIONS: ActionItem[] = [
     id: '2', 
     iconName: 'person-add-outline', 
     label: 'Registrar Usuario', 
-    // Usamos 'Register' que definiste en tu StackExploreParams
     action: (navigation) => navigation.navigate("Register", { typeOfForm: "register" }), 
     role: 'admin' 
   },
@@ -104,8 +107,8 @@ const styles = StyleSheet.create({
 
 const ActionButton: React.FC<ActionButtonProps> = ({ item, navigation }) => (
   <TouchableOpacity
-    onPress={() => item.action(navigation)} // Ejecutamos la acción con el objeto navigation
-    className="bg-white rounded-xl shadow-md p-4 items-center justify-center border border-gray-100 active:bg-gray-50 m-1"
+    onPress={() => item.action(navigation)} 
+    className="bg-white rounded-xl shadow-md p-4 items-center justify-center border border-gray-100 active:bg-gray-50 m-2" // Ajuste de margen
     style={{
       width: ITEM_WIDTH,
       height: 144,
@@ -126,12 +129,15 @@ const ActionButton: React.FC<ActionButtonProps> = ({ item, navigation }) => (
 const UserModal: React.FC<UserModalProps> = ({ visible, onClose, onLogout, userInfo }) => {
   const userRole = userInfo?.role === 'admin' ? 'Administrador' : 'Usuario en Piso';
   const displayEmail = userInfo?.email || 'N/A';
-  const displayName = `${userInfo?.first_name || ''} ${userInfo?.last_name || ''}`.trim() || 'Usuario Desconocido';
+  // CORRECCIÓN: Usar firstName y lastName
+  const displayName = `${userInfo?.firstName || ''} ${userInfo?.lastName || ''}`.trim() || 'Usuario Desconocido';
   const displayUID = userInfo?.uid || 'ID no disponible';
+  const displayEmployeeId = userInfo?.employeeId || 'N/A';
+  const displayDepartment = userInfo?.department || 'N/A';
 
   return (
     <Modal
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
@@ -147,23 +153,33 @@ const UserModal: React.FC<UserModalProps> = ({ visible, onClose, onLogout, userI
         >
           <View className="w-16 h-1 bg-gray-300 rounded-full self-center mb-5" />
 
-          <View className="mb-6">
-            <Text className="text-lg font-semibold text-gray-800 mb-2">
+          <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+            Información del Perfil
+          </Text>
+
+          <View className="mb-6 space-y-2">
+            <Text className="text-lg font-semibold text-gray-800">
               <Text className="font-bold">Rol:</Text> {userRole}
             </Text>
-            <Text className="text-lg font-semibold text-gray-800 mb-2">
+            <Text className="text-lg font-semibold text-gray-800">
               <Text className="font-bold">Nombre:</Text> {displayName}
             </Text>
-            <Text className="text-lg font-semibold text-gray-800 mb-2">
+            <Text className="text-lg font-semibold text-gray-800">
+              <Text className="font-bold">Departamento:</Text> {displayDepartment}
+            </Text>
+            <Text className="text-lg font-semibold text-gray-800">
+              <Text className="font-bold">ID Empleado:</Text> {displayEmployeeId}
+            </Text>
+            <Text className="text-lg font-semibold text-gray-800">
               <Text className="font-bold">Email:</Text> {displayEmail}
             </Text>
-             <Text className="text-sm text-gray-500 mt-2">
+            <Text className="text-sm text-gray-500 pt-1">
               <Text className="font-bold">UID:</Text> {displayUID}
             </Text>
           </View>
 
           <TouchableOpacity
-            className="bg-black py-4 rounded-xl flex-row justify-center items-center"
+            className="bg-red-600 py-4 rounded-xl flex-row justify-center items-center"
             onPress={onLogout}
           >
             <Text className="text-white text-lg font-semibold mr-2">
@@ -180,9 +196,10 @@ const UserModal: React.FC<UserModalProps> = ({ visible, onClose, onLogout, userI
 // --- PANTALLA PRINCIPAL ---
 
 const AdminScreen: React.FC = () => {
-  const navigation = useNavigation<AdminScreenNavigationProp>(); // Inicializamos la navegación tipada
+  const navigation = useNavigation<AdminScreenNavigationProp>(); 
   const [modalVisible, setModalVisible] = useState(false);
   const { signOut } = useAuth();
+  // useUserProfile ahora usa el GET único de RTDB
   const { userInfo, isLoadingProfile } = useUserProfile();
 
   const handleLogout = () => {
@@ -194,27 +211,30 @@ const AdminScreen: React.FC = () => {
   const availableActions = useMemo(() => {
       const allActions = [...ADMIN_ACTIONS, ...USER_ACTIONS];
       const role = userInfo?.role;
-
-      return allActions;
+      
       if (role === 'admin') {
           return allActions.filter(action => action.role === 'admin');
       } else if (role === 'user') {
-          return allActions.filter(action => action.role === 'user');
+          // Si es usuario, solo mostramos las acciones de usuario más Escanear Equipo
+          return allActions.filter(action => action.role === 'user' || action.id === '3');
       }
       return []; 
   }, [userInfo?.role]);
 
-  if (!userInfo) {
+  // Manejo de estados de carga
+  if (isLoadingProfile || !userInfo) {
     return (
       <SafeAreaView className="flex-1 justify-center items-center bg-gray-50">
         <Text className="text-xl font-medium text-gray-600">
           Cargando perfil de AssetTrack...
         </Text>
+        {/* Aquí iría un componente de carga (spinner) */}
       </SafeAreaView>
     );
   }
 
-  const greetingName = userInfo.first_name || 'Usuario';
+  // CORRECCIÓN: Usar firstName
+  const greetingName = userInfo.firstName || 'Usuario';
   const userRoleDisplay = userInfo.role === 'admin' ? 'Administrador' : 'Usuario en Piso';
 
   return (
@@ -223,8 +243,9 @@ const AdminScreen: React.FC = () => {
         data={availableActions}
         keyExtractor={(item) => item.id}
         numColumns={2}
-        renderItem={({ item }) => <ActionButton item={item} navigation={navigation} />} // Pasamos el objeto navigation
+        renderItem={({ item }) => <ActionButton item={item} navigation={navigation} />} 
         contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}
+        columnWrapperStyle={{ justifyContent: 'space-between' }}
         
         ListHeaderComponent={
           <>
@@ -234,13 +255,13 @@ const AdminScreen: React.FC = () => {
                   Hola, {greetingName} 👋
                 </Text>
                 <Text className="text-lg text-gray-500 mt-1">
-                  {userRoleDisplay}
+                  {userRoleDisplay} | {userInfo.department}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(true)}>
                 <Image
-                  source={{ uri: 'https://i.imgur.com/GzG4BfR.png' }} 
-                  className="w-12 h-12 rounded-full border-2 border-gray-200"
+                  source={{ uri: 'https://i.imgur.com/GzG4BfR.png' }} // Placeholder de Avatar
+                  className="w-12 h-12 rounded-full border-2 border-indigo-500/50 shadow-md"
                 />
               </TouchableOpacity>
             </View>

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { getAuth, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth';
 import { 
   getDatabase, 
-  ref as rtdbRef, // <--- CORRECCIÓN: 'ref' ahora se importa como 'rtdbRef'
+  ref as rtdbRef, // 'ref' ahora se importa como 'rtdbRef'
   set as rtdbSet, 
   get as rtdbGet, 
   push as rtdbPush, 
@@ -103,11 +103,34 @@ export const useUsers = () => {
   }, [saveUserProfileData]);
 
   /**
+   * Inicia sesión con Email y Password.
+   */
+  const signInUser = useCallback(async (email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setLoading(false);
+      return userCredential.user; // Retorna el objeto User de Auth
+    } catch (err: any) {
+      console.error("Error durante el inicio de sesión:", err);
+      let errorMessage = "Credenciales inválidas. Por favor, verifica el correo y la contraseña.";
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        errorMessage = "Usuario o contraseña incorrectos.";
+      }
+      setError(errorMessage);
+      setLoading(false);
+      return null;
+    }
+  }, []);
+
+  /**
    * Obtiene la data extendida de un usuario por su UID desde RTDB.
    */
   const getUserProfile = useCallback(async (uid: string): Promise<UserProfileData | null> => {
     try {
       const profilePath = `${USER_PROFILES_RTDB_PATH}/${uid}`;
+      // Usamos rtdbRef y rtdbGet para una consulta única (no listener)
       const snapshot = await rtdbGet(rtdbChild(rtdbRef(db), profilePath));
       
       if (snapshot.exists()) {
@@ -120,7 +143,5 @@ export const useUsers = () => {
     }
   }, []);
 
-  // También puedes añadir funciones para signIn, signOut, etc., aquí si es necesario.
-  
-  return { registerUser, getUserProfile, loading, error };
+  return { registerUser, signInUser, getUserProfile, loading, error };
 };

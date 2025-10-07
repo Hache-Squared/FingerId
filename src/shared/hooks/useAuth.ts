@@ -1,31 +1,32 @@
-// src/shared/hooks/useAuth.ts
 import { useAppDispatch, useAppSelector } from '../../store';
 import { loginUser, logoutUser, setAuthLoading } from '../../store/auth/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firebaseAuthFetch } from '../../shared/fetch/firebaseAuthFetch';
+import { useUsers } from './useUsers'; // Importar useUsers para signInUser
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const { user, loading, error } = useAppSelector((state) => state.auth);
+  const { signInUser, registerUser } = useUsers(); // Usamos las funciones del hook de users
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
       dispatch(setAuthLoading(true));
-      const response = await firebaseAuthFetch.signIn(email, password);
-        console.log({
-           responseFromFirebase: JSON.stringify(response) 
-        });
+      
+      // CAMBIO CLAVE: Usamos signInUser de useUsers.ts
+      const responseUser = await signInUser(email, password);
         
-      if (response.user) {
+      if (responseUser) {
         // Guardar sesión local
-        await AsyncStorage.setItem('@user', JSON.stringify(response.user));
+        await AsyncStorage.setItem('@user', JSON.stringify(responseUser));
         const cleanUser = {
-          uid: response.user.uid,
-          email: response.user.email || '',
+          uid: responseUser.uid,
+          email: responseUser.email || '',
         };
         dispatch(loginUser(cleanUser));
       } else {
-        throw new Error('Invalid credentials');
+        // El error ya fue manejado y establecido en useUsers
+        throw new Error('Fallo en la autenticación (ver errores de useUsers)'); 
       }
     } catch (err: any) {
       console.error(err);
@@ -37,13 +38,22 @@ export const useAuth = () => {
   const signUpWithEmail = async (email: string, password: string) => {
     try {
       dispatch(setAuthLoading(true));
-      const response = await firebaseAuthFetch.signUp(email, password);
-      if (response.user) {
-        const cleanUser = {
-          uid: response.user.uid,
-          email: response.user.email || '',
-        };
-        dispatch(loginUser(cleanUser));
+      // Usamos registerUser de useUsers para crear usuario y perfil RTDB
+      const uid = await registerUser(email, password, {
+          // Aquí pasarías la data del perfil si fuera un registro en vivo
+          firstName: 'Nuevo',
+          lastName: 'Usuario',
+          employeeId: 'TEMP',
+          department: 'TEMP',
+          role: 'user'
+      });
+      
+      if (uid) {
+        // Como registerUser también es signInUser, el usuario ya está autenticado.
+        // Simulamos la estructura mínima para Redux/AsyncStorage
+        const tempUser = { uid, email }; 
+        await AsyncStorage.setItem('@user', JSON.stringify(tempUser));
+        dispatch(loginUser(tempUser));
       }
     } catch (err: any) {
       console.error(err);

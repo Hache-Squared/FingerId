@@ -4,9 +4,10 @@ import {
   ScrollView, Alert, ActivityIndicator 
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; 
-import { useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { useUserProfile } from '../../shared/hooks/useUserProfile';
 import { useAssets } from '../../shared/hooks/useAssets'; // Importamos el hook de aplicación
+import { StackExploreParams } from '../../routes/StackExplore';
 
 // Tipado del formulario (exportado para ser usado en useAssets)
 export interface AssetFormData {
@@ -40,7 +41,7 @@ const INITIAL_STATE: AssetFormData = {
 };
 
 const AssetFormScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   const { userInfo } = useUserProfile();
   
   // Usamos el hook de aplicación para la función de guardado
@@ -83,7 +84,10 @@ const AssetFormScreen: React.FC = () => {
       
       // 3. Feedback al usuario y navegación
       Alert.alert('Éxito', 'El equipo ha sido registrado exitosamente en el inventario.', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => navigation.navigate("GenerateQrScreen",{
+          assetId: newDocId.assetId ?? "",
+          asset_name: formData.asset_name
+        }) }
       ]);
       
     } catch (error) {

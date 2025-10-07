@@ -49,9 +49,6 @@ export const useAssignments = () => {
             assetId: assignmentData?.id, // El ID de la clave de la asignación es el assetId
         }));
       }
-      console.log({
-        assignmentsArray
-      });
       
       setAssignments(assignmentsArray);
     } catch (e) {

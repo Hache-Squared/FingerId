@@ -22,6 +22,7 @@ export const useAssets = () => {
   // useRealtimeFetch manejará la colección
   const { 
     fetchData, 
+    fetchOne,
     mutateData, 
     loading: rtdbLoading, 
     error: rtdbError 
@@ -156,13 +157,13 @@ export const useAssets = () => {
   const addLogToAsset = useCallback(async (assetId: string, action: AssetLogEntry['action'], details: string) => {
     const assetPath = `${ASSETS_RTDB_PATH}/${assetId}`;
     console.log("addLogToAsset: ",{
-      assetId, action, details
+      assetId, action, details,assetPath
     });
     
     try {
       // 1. Obtener el asset actual
       // FIX: Aseguramos el tipo de retorno para un solo objeto
-      const assetObject = await fetchData(assetPath) as unknown as Omit<Asset, 'assetId'> | null;
+      const assetObject = await fetchOne(assetPath) as unknown as Omit<Asset, 'assetId'> | null;
       if (!assetObject) {
         throw new Error(`Asset con ID ${assetId} no encontrado para el log.`);
       }
@@ -182,7 +183,9 @@ export const useAssets = () => {
       // 4. Actualizar solo el campo 'logs' del asset
       console.log("addLogToAsset before updateAsset",{
         updatedLogs,
-        assetId
+        assetId,
+        logs: assetObject.logs,
+        assetObject: JSON.stringify(assetObject)
       });
       
       await updateAsset(assetId, { logs: updatedLogs });
@@ -204,7 +207,7 @@ export const useAssets = () => {
     const assetPath = `${ASSETS_RTDB_PATH}/${assetId}`;
     try {
         // FIX: Aseguramos el tipo de retorno para un solo objeto
-        const assetData = await fetchData(assetPath) as unknown as Omit<Asset, 'assetId'>;
+        const assetData = await fetchOne(assetPath) as unknown as Omit<Asset, 'assetId'>;
         if (assetData) {
             return { ...assetData, assetId };
         }

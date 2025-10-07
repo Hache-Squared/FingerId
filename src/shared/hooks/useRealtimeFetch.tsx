@@ -50,6 +50,35 @@ export const useRealtimeFetch = <T extends DocumentData>() => {
   }, []);
 
   /**
+   * Carga datos de una RUTA DE DOCUMENTO (un solo elemento).
+   * Devuelve un objeto simple o null.
+   * @param path Ruta exacta del nodo (Ej: 'inventory/assets/-Nfg43hJ...').
+   */
+  const fetchOne = useCallback(async (path: string): Promise<T | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const dbRef = ref(db);
+      const snapshot: DataSnapshot = await get(child(dbRef, path));
+      
+      if (snapshot.exists()) {
+        const data = snapshot.val() as T;
+        setLoading(false);
+        // NO inyectamos 'id' aquí, se manejará en useAssets
+        return data; 
+      }
+
+      setLoading(false);
+      return null;
+    } catch (err: any) {
+      console.error("Error fetching single data from RTDB:", err);
+      setError(err.message || 'Error al cargar el dato único.');
+      setLoading(false);
+      return null;
+    }
+  }, []);
+
+  /**
    * Mutación genérica para RTDB.
    */
   const mutateData = useCallback(async (
@@ -92,5 +121,5 @@ export const useRealtimeFetch = <T extends DocumentData>() => {
     }
   }, []);
 
-  return { fetchData, mutateData, loading, error };
+  return { fetchData, fetchOne, mutateData, loading, error };
 };

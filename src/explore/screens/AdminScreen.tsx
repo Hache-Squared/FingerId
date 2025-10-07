@@ -14,7 +14,7 @@ import { UserProfileData } from '../../shared/hooks/useUsers';
 
 const { width } = Dimensions.get('window');
 // Ajuste de ancho para 2 columnas con margen
-const ITEM_WIDTH = (width - 20 - 16) / 2; 
+const ITEM_WIDTH = (width - 25 - 25) / 2; 
 
 // --- TIPOS ---
 

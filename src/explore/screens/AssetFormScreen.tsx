@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons'; 
 import { useNavigation } from '@react-navigation/native';
-// NOTA: Se eliminaron las importaciones de Firebase Core y Firestore
 import { useUserProfile } from '../../shared/hooks/useUserProfile';
 import { useAssets } from '../../shared/hooks/useAssets'; // Importamos el hook de aplicación
 
@@ -15,7 +14,13 @@ export interface AssetFormData {
   serial_number: string;
   description: string;
   status: 'active' | 'in_maintenance' | 'decommissioned';
-  asset_type: string; // Nuevo campo para diferenciar Computadora, Impresora, etc.
+  asset_type: string; // Tipo de Activo: Computadora, Impresora, etc.
+  
+  make: string; // Marca
+  model: string; // Modelo
+  approx_cost: number; // Costo aproximado (0 si es null/no aplica)
+  color: string; // Color del activo
+  important_data: string; // Otros datos importantes
 }
 
 // Valores iniciales
@@ -25,6 +30,13 @@ const INITIAL_STATE: AssetFormData = {
   description: '',
   status: 'active',
   asset_type: '',
+  
+  // VALORES INICIALES PARA NUEVAS PROPIEDADES
+  make: '',
+  model: '',
+  approx_cost: 0,
+  color: '',
+  important_data: '',
 };
 
 const AssetFormScreen: React.FC = () => {
@@ -40,8 +52,14 @@ const AssetFormScreen: React.FC = () => {
   // Combinamos el estado de carga del hook con el local de la UI
   const loading = hookLoading || localLoading; 
   
-  const handleInputChange = (name: keyof AssetFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleInputChange = (name: keyof AssetFormData, value: string | number) => {
+    // Manejo especial para approx_cost (si es string vacío, lo pone a 0)
+    if (name === 'approx_cost') {
+        const numericValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
+        setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSaveAsset = async () => {
@@ -120,6 +138,24 @@ const AssetFormScreen: React.FC = () => {
           onChangeText={(text) => handleInputChange('asset_name', text)}
         />
         
+        {/* Marca */}
+        <Text style={styles.label}>Marca</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ej: Dell, HP, Samsung"
+          value={formData.make}
+          onChangeText={(text) => handleInputChange('make', text)}
+        />
+
+        {/* Modelo */}
+        <Text style={styles.label}>Modelo</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ej: Latitude 5420, EliteBook G8"
+          value={formData.model}
+          onChangeText={(text) => handleInputChange('model', text)}
+        />
+        
         {/* Número de Serie */}
         <Text style={styles.label}>Número de Serie / HP (*)</Text>
         <TextInput
@@ -128,9 +164,39 @@ const AssetFormScreen: React.FC = () => {
           value={formData.serial_number}
           onChangeText={(text) => handleInputChange('serial_number', text)}
         />
+        
+        {/* Costo Aproximado */}
+        <Text style={styles.label}>Costo Aproximado (USD)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ej: 850.50 (O 0 si no aplica)"
+          value={formData.approx_cost === 0 ? '' : String(formData.approx_cost)}
+          onChangeText={(text) => handleInputChange('approx_cost', text)}
+          keyboardType="numeric"
+        />
+
+        {/* Color */}
+        <Text style={styles.label}>Color</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ej: Negro, Plateado"
+          value={formData.color}
+          onChangeText={(text) => handleInputChange('color', text)}
+        />
+
+        {/* Otros Datos Importantes */}
+        <Text style={styles.label}>Otros Datos Importantes</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          placeholder="Ej: Ubicación, Departamento de destino, Licencias asociadas."
+          value={formData.important_data}
+          onChangeText={(text) => handleInputChange('important_data', text)}
+          multiline={true}
+          numberOfLines={4}
+        />
 
         {/* Descripción */}
-        <Text style={styles.label}>Descripción / Especificaciones</Text>
+        <Text style={styles.label}>Especificaciones Técnicas</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Ej: Core i5, 16GB RAM, SSD 512GB"
@@ -152,7 +218,7 @@ const AssetFormScreen: React.FC = () => {
         <TouchableOpacity
           onPress={handleSaveAsset}
           disabled={loading}
-          className={`py-4 rounded-xl mt-6 ${loading ? 'bg-gray-400' : 'bg-indigo-600'} shadow-md`}
+          className={`py-4 rounded-xl mt-6 mb-8 ${loading ? 'bg-gray-400' : 'bg-indigo-600'} shadow-md`}
         >
           <Text className="text-white text-lg font-bold text-center">
             {loading ? 'Guardando...' : 'Registrar Equipo'}

@@ -91,7 +91,7 @@ const ADMIN_ACTIONS: ActionItem[] = [
     id: '5', 
     iconName: 'checkbox-outline', 
     label: 'Mantenimiento (Admin)', 
-    action: (navigation) => console.log('Navegar a Gestión Mantenimiento (Pendiente)'), 
+    action: (navigation) => navigation.navigate("AdminMaintenanceScreen"), 
     role: 'admin' 
   },
   { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => navigation.navigate("MyAssignedAssetsScreen"), role: 'admin' },

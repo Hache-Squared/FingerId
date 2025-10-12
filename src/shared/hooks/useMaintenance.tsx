@@ -13,6 +13,7 @@ export type MaintenanceStatus = 'PENDING' | 'IN_PROGRESS' | 'FINALIZED' | 'DELIV
 
 // Entidad de Mantenimiento
 export interface Maintenance {
+  id?: string;
   maintenanceId: string; // Clave de RTDB
   assetId: string;
   title: string;
@@ -39,6 +40,7 @@ export const useMaintenance = () => {
 
   const {
     fetchData,
+    fetchOne,
     mutateData,
     loading: rtdbLoading,
     error: rtdbError
@@ -56,7 +58,7 @@ export const useMaintenance = () => {
     
     return Object.entries(fetchedObject).map(([id, data]) => ({
         ...data,
-        maintenanceId: id, // La clave de RTDB se convierte en el ID del Mantenimiento
+        maintenanceId: data?.id, // La clave de RTDB se convierte en el ID del Mantenimiento
     })) as Maintenance[];
   }, []);
   
@@ -159,12 +161,20 @@ export const useMaintenance = () => {
       const performedByUid = auth.currentUser?.uid || 'SYSTEM_UNAUTH';
 
       try {
-          // 1. Obtener el mantenimiento actual para el log
-          // FIX: Usamos fetchOne para obtener el objeto singular
-          const maintenanceObject = await (fetchData(`${updatePath}`)) as any;
-          if (!maintenanceObject) {
+          // 1. Obtener el mantenimiento actual para el log (usando fetchData en el subnodo)
+          const fetchedObject = await (fetchOne(`${updatePath}`)) as any;
+          
+          // Nota: Si el resultado de fetchData en un subnodo es null/undefined,
+          // debemos asumir que no se encontró el mantenimiento.
+          if (!fetchedObject) {
               throw new Error(`Mantenimiento con ID ${maintenanceId} no encontrado.`);
           }
+          // Debemos reconstruir el objeto Maintenance temporalmente
+          const maintenanceObject: Maintenance = { 
+              ...fetchedObject, 
+              maintenanceId 
+          };
+
 
           // 2. Crear nueva entrada de log
           const newLogEntry = {
@@ -191,6 +201,29 @@ export const useMaintenance = () => {
           throw e;
       }
   }, [mutateData, fetchData]);
+  
+  // ======================================================
+  // === ADICIONES NECESARIAS PARA LA PANTALLA DE ADMIN ===
+  // ======================================================
+
+  /**
+   * Obtiene un solo mantenimiento por su ID.
+   */
+  const getMaintenanceById = useCallback(async (maintenanceId: string): Promise<Maintenance | null> => {
+    const maintenancePath = `${MAINTENANCE_RTDB_PATH}/${maintenanceId}`;
+    try {
+        // Obtenemos el objeto directamente desde el subnodo
+        const maintenanceData = await fetchOne(maintenancePath) as unknown as Omit<Maintenance, 'maintenanceId'>;
+        
+        if (maintenanceData) {
+            return { ...maintenanceData, maintenanceId };
+        }
+        return null;
+    } catch (e) {
+        console.error("Error fetching single maintenance:", e);
+        return null;
+    }
+  }, [fetchData]);
 
 
   return { 
@@ -199,6 +232,7 @@ export const useMaintenance = () => {
     fetchActiveMaintenanceByAssetId,
     createMaintenanceRequest,
     fetchAllMaintenance,
-    updateMaintenanceStatus, // Dejamos esto expuesto para AdminScreen futura
+    updateMaintenanceStatus,
+    getMaintenanceById, // EXPUESTO para la pantalla de detalles
   };
 };

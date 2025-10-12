@@ -15,6 +15,8 @@ import AssetDetailScreen from '../explore/screens/AssetDetailScreen';
 import GenerateQrScreen from '../explore/screens/GenerateQrScreen';
 import ScanAssetScreen from '../explore/screens/ScanAssetScreen';
 import { MyAssignedAssetsScreen } from '../explore/screens/MyAssignedAssetsScreen';
+import { AdminMaintenanceScreen } from '../explore/screens/AdminMaintenanceScreen';
+import { MaintenanceDetailScreen } from '../explore/screens/MaintenanceDetailScreen';
 
 export type StackExploreParams = {
   Admin: undefined,
@@ -23,6 +25,10 @@ export type StackExploreParams = {
   UserAssetListScreen: undefined,
   AssetListScreen: undefined,
   MyAssignedAssetsScreen: undefined,
+  AdminMaintenanceScreen: undefined,
+  MaintenanceDetailScreen: {
+    maintenanceId: string // Requerido para cargar la solicitud
+  },
   AssetDetailScreen: {
     assetId: string 
   },
@@ -70,6 +76,8 @@ export const StackExplore = () => {
              <Stack.Screen name="GenerateQrScreen" component={GenerateQrScreen} />
              <Stack.Screen name="ScanAssetScreen" component={ScanAssetScreen} />
              <Stack.Screen name="MyAssignedAssetsScreen" component={MyAssignedAssetsScreen} />
+             <Stack.Screen name="AdminMaintenanceScreen" component={AdminMaintenanceScreen} />
+             <Stack.Screen name="MaintenanceDetailScreen" component={MaintenanceDetailScreen} />
           </>    
         )
       }

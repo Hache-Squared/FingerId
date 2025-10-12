@@ -18,6 +18,7 @@ import { useMaintenance, MaintenanceStatus, Maintenance } from '../../shared/hoo
 import { useAssets } from '../../shared/hooks/useAssets';
 import { Asset } from '../../types/Asset.types';
 import { StackExploreParams } from '../../routes/StackExplore';
+import { useUserProfile } from '../../shared/hooks/useUserProfile';
 
 // Tipos para la ruta
 type MaintenanceDetailRouteProp = RouteProp<StackExploreParams, 'MaintenanceDetailScreen'>;
@@ -65,6 +66,7 @@ const MaintenanceDetailScreen: React.FC = () => {
     console.log({
         maintenanceId
     });
+    const { userInfo } = useUserProfile(); 
     
 
     const { getMaintenanceById, updateMaintenanceStatus, loading: loadingMaintenance } = useMaintenance();
@@ -231,58 +233,62 @@ const MaintenanceDetailScreen: React.FC = () => {
             </ScrollView>
 
             {/* BARRA INFERIOR DE ACCIÓN */}
-            <View style={styles.actionBar}>
-                {canAdvance && (
-                    <>
-                        {/* Input para el mensaje requerido */}
-                        {flowData?.requiresMessage && (
-                            <TextInput
-                                style={styles.input}
-                                placeholder={`Mensaje para el estatus ${nextStatus}`}
-                                value={statusMessage}
-                                onChangeText={setStatusMessage}
-                                editable={!isSubmitting}
-                            />
-                        )}
-                        
-                        {/* Botón de Avance */}
+            {
+                userInfo?.role === "admin" && (
+                <View style={styles.actionBar}>
+                    {canAdvance && (
+                        <>
+                            {/* Input para el mensaje requerido */}
+                            {flowData?.requiresMessage && (
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder={`Mensaje para el estatus ${nextStatus}`}
+                                    value={statusMessage}
+                                    onChangeText={setStatusMessage}
+                                    editable={!isSubmitting}
+                                />
+                            )}
+                            
+                            {/* Botón de Avance */}
+                            <TouchableOpacity
+                                style={[styles.actionButton, { backgroundColor: flowData?.color }]}
+                                onPress={handleStatusChange}
+                                disabled={isSubmitting || (flowData?.requiresMessage && !statusMessage.trim())}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {isSubmitting ? 'Cambiando...' : flowData?.text}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                    
+                    {/* Botón de Cancelar (si aplica) */}
+                    {showCancelButton && (
                         <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: flowData?.color }]}
-                            onPress={handleStatusChange}
-                            disabled={isSubmitting || (flowData?.requiresMessage && !statusMessage.trim())}
+                            style={[styles.actionButton, styles.cancelButton]}
+                            onPress={() => {
+                                // Implementar lógica de modal/confirmación para CANCELLED
+                                Alert.alert("Cancelar Solicitud", "¿Está seguro de cancelar esta solicitud?", [
+                                    { text: "No" },
+                                    { 
+                                        text: "Sí, Cancelar", 
+                                        onPress: () => {
+                                            setStatusMessage('Solicitud cancelada por el administrador.');
+                                            updateMaintenanceStatus(maintenance.maintenanceId, 'CANCELLED', 'Solicitud cancelada por el administrador.')
+                                                .then(() => loadData())
+                                                .catch((e) => Alert.alert("Error", "Fallo al cancelar."));
+                                        } 
+                                    },
+                                ]);
+                            }}
+                            disabled={isSubmitting}
                         >
-                            <Text style={styles.buttonText}>
-                                {isSubmitting ? 'Cambiando...' : flowData?.text}
-                            </Text>
+                            <Text style={styles.buttonText}>Cancelar</Text>
                         </TouchableOpacity>
-                    </>
-                )}
-                
-                {/* Botón de Cancelar (si aplica) */}
-                {showCancelButton && (
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.cancelButton]}
-                        onPress={() => {
-                            // Implementar lógica de modal/confirmación para CANCELLED
-                            Alert.alert("Cancelar Solicitud", "¿Está seguro de cancelar esta solicitud?", [
-                                { text: "No" },
-                                { 
-                                    text: "Sí, Cancelar", 
-                                    onPress: () => {
-                                        setStatusMessage('Solicitud cancelada por el administrador.');
-                                        updateMaintenanceStatus(maintenance.maintenanceId, 'CANCELLED', 'Solicitud cancelada por el administrador.')
-                                            .then(() => loadData())
-                                            .catch((e) => Alert.alert("Error", "Fallo al cancelar."));
-                                    } 
-                                },
-                            ]);
-                        }}
-                        disabled={isSubmitting}
-                    >
-                        <Text style={styles.buttonText}>Cancelar</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+                    )}
+                </View>
+                )
+            }
         </SafeAreaView>
     );
 };

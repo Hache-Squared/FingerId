@@ -45,6 +45,7 @@ const LoginUserScreen = () => {
               placeholder='Contraseña'
               placeholderTextColor={primaryColor}
               onChangeText={(text) => setPassword(text)}
+              secureTextEntry
               />
             
           </View>

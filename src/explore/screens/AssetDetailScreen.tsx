@@ -11,17 +11,16 @@ import { format } from 'date-fns';
 
 // NOTA: Estas importaciones deben coincidir con tu estructura de proyecto
 import { useAssets } from '../../shared/hooks/useAssets';
-// CORRECCIÓN: Usaremos useUsers para acceder a la función de búsqueda de perfiles (getUserProfile)
 import { useUsers } from '../../shared/hooks/useUsers'; 
 import { StackExploreParams } from '../../routes/StackExplore';
+// --- AÑADIDO: Importar el hook de mantenimiento y sus tipos ---
+import { useMaintenance, Maintenance, MaintenanceStatus } from '../../shared/hooks/useMaintenance'; 
 
 // Importación del componente de generación de QR
-// AJUSTA ESTA RUTA si es diferente en tu proyecto
 import { QrCodeGenerator } from '../../shared/components/QrCodeGenerator'; 
 import { useUserProfile } from '../../shared/hooks/useUserProfile';
 
-// --- DEFINICIONES DE TIPOS (DEBE COINCIDIR CON TU ARCHIVO DE TIPOS) ---
-// Tipo de la entrada del log
+// --- DEFINICIONES DE TIPOS (EXISTENTES) ---
 export interface AssetLogEntry {
   timestamp: number;
   action: 'CREATED' | 'ASSIGNED' | 'UNASSIGNED' | 'MAINTENANCE' | 'DECOMMISSIONED';
@@ -29,7 +28,6 @@ export interface AssetLogEntry {
   details: string;
 }
 
-// Tipo principal del Activo
 export interface Asset {
   assetId: string;
   asset_name: string;
@@ -38,12 +36,11 @@ export interface Asset {
   status: 'active' | 'in_maintenance' | 'decommissioned';
   asset_type: string;
   
-  // PROPIEDADES EXTENDIDAS
-  make: string; // Marca
-  model: string; // Modelo
-  approx_cost: number; // Costo aproximado
-  color: string; // Color del activo
-  important_data: string; // Otros datos importantes
+  make: string; 
+  model: string; 
+  approx_cost: number; 
+  color: string; 
+  important_data: string; 
 
   created_at: number;
   created_by_uid: string;
@@ -55,29 +52,52 @@ export interface Asset {
 
 // --- COMPONENTE PRINCIPAL ---
 
+// --- AÑADIDO: Tipo para los estados de las pestañas ---
+type AssetDetailTab = 'logs' | 'assignment' | 'maintenance'; 
+
 const AssetDetailScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<StackExploreParams>>()
-  // El assetId viene de la navegación 
   const { assetId } = useRoute<RouteProp<StackExploreParams, 'AssetDetailScreen'>>().params;
 
   const { getAssetById, loading: assetLoading } = useAssets();
   const { getUserProfile } = useUsers(); 
+  // --- AÑADIDO: Hook de mantenimiento ---
+  const { fetchAllMaintenance, loading: maintenanceLoading } = useMaintenance(); 
+
   const { userInfo, isLoadingProfile } = useUserProfile();
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [assignedUser, setAssignedUser] = useState<{ displayName: string, email: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'logs' | 'assignment'>('logs'); 
+  // --- MODIFICADO: Añadido 'maintenance' al tipo de pestaña ---
+  const [activeTab, setActiveTab] = useState<AssetDetailTab>('logs'); 
   
-  // NUEVO ESTADO: Controla la visibilidad del Modal del QR
+  // --- AÑADIDO: Nuevo estado para los mantenimientos del activo ---
+  const [assetMaintenanceList, setAssetMaintenanceList] = useState<Maintenance[]>([]); 
+
   const [isQrModalVisible, setIsQrModalVisible] = useState(false);
 
-  const isLoading = assetLoading || !asset;
+  // Modificado: Incluir maintenanceLoading en el estado general de carga
+  const isLoading = assetLoading || !asset || maintenanceLoading; 
 
   // 1. Cargar el activo por ID
   const loadAsset = useCallback(async () => {
     const fetchedAsset = await getAssetById(assetId); 
     setAsset(fetchedAsset as Asset);
   }, [assetId, getAssetById]);
+
+  // --- AÑADIDO: Lógica de carga para Mantenimientos ---
+  const loadAssetMaintenance = useCallback(async () => {
+    // Nota: fetchAllMaintenance trae TODOS los mantenimientos
+    const allMaintenance = await fetchAllMaintenance(); 
+    
+    // Filtramos solo los que corresponden a este activo
+    const filteredMaintenance = allMaintenance
+        .filter(m => m.assetId === assetId)
+        .sort((a, b) => b.requestDate - a.requestDate); // Ordenamos por fecha más reciente
+        
+    setAssetMaintenanceList(filteredMaintenance);
+  }, [assetId, fetchAllMaintenance]);
+  // ---------------------------------------------------
 
   // 2. Cargar datos de la persona asignada
   const loadAssignedUser = useCallback(async (uid: string) => {
@@ -92,10 +112,11 @@ const AssetDetailScreen: React.FC = () => {
     }
   }, [getUserProfile]);
 
-  // Effect para la carga inicial del activo
+  // Effect para la carga inicial del activo Y MANTENIMIENTOS
   useEffect(() => {
     loadAsset();
-  }, [loadAsset]);
+    loadAssetMaintenance(); // --- AÑADIDO: Cargar mantenimientos al iniciar ---
+  }, [loadAsset, loadAssetMaintenance]);
 
   // Effect para cargar el usuario asignado cuando el activo cambie
   useEffect(() => {
@@ -109,7 +130,7 @@ const AssetDetailScreen: React.FC = () => {
 
   // --- COMPONENTES DE VISTA INTERNA ---
 
-  // Componente para mostrar una línea de dato
+  // Componente para mostrar una línea de dato (Existente)
   const DataRow: React.FC<{ label: string, value: string | number | undefined }> = ({ label, value }) => (
     <View style={styles.dataRow}>
       <Text style={styles.dataLabel}>{label}</Text>
@@ -117,7 +138,7 @@ const AssetDetailScreen: React.FC = () => {
     </View>
   );
 
-  // Componente para la lista de Logs
+  // Componente para la lista de Logs (Existente)
   const LogItem: React.FC<{ log: AssetLogEntry }> = ({ log }) => {
     const date = format(new Date(log.timestamp), 'dd MMM yyyy HH:mm');
     return (
@@ -131,11 +152,75 @@ const AssetDetailScreen: React.FC = () => {
     );
   };
   
-  // --- CONTENIDO DE LAS PESTAÑAS ---
+  // --- AÑADIDO: Componente para los Mantenimientos del Activo ---
+  const MaintenanceItem: React.FC<{ maintenance: Maintenance }> = ({ maintenance }) => {
+    const statusColorMap = {
+        PENDING: '#f59e0b',
+        IN_PROGRESS: '#4f46e5',
+        FINALIZED: '#10b981',
+        DELIVERED: '#3b82f6',
+        CANCELLED: '#ef4444',
+    };
+    const date = format(new Date(maintenance.requestDate), 'dd MMM yyyy');
+    const statusColor = statusColorMap[maintenance.status] || '#6b7280';
+    
+    return (
+      <TouchableOpacity 
+          style={styles.logItemContainer}
+          // Navegar a la pantalla de detalle de mantenimiento
+          onPress={() => navigation.navigate('MaintenanceDetailScreen', { maintenanceId: maintenance.maintenanceId })}
+      >
+        <View style={styles.maintenanceHeader}>
+            <Text style={[styles.logAction, { color: statusColor }]}>
+                {maintenance.title}
+            </Text>
+            <Text style={[styles.maintenanceStatus, { color: statusColor, borderColor: statusColor }]}>
+                {maintenance.status}
+            </Text>
+        </View>
+        <Text style={styles.logMetadata}>
+          Solicitado el: {date}
+        </Text>
+        <Text style={styles.logDetails} numberOfLines={2}>
+            {maintenance.details}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
-  // Pestaña 1: Información de Asignación
+  // Pestaña 3: Lista de Mantenimientos
+  const MaintenanceTab = () => {
+    return (
+      <View style={styles.flex1}>
+        {assetMaintenanceList.length > 0 ? (
+          <FlatList
+            data={assetMaintenanceList}
+            renderItem={({ item }) => <MaintenanceItem maintenance={item} />}
+            keyExtractor={item => item.maintenanceId}
+            contentContainerStyle={styles.flatListContent}
+          />
+        ) : (
+          <View style={[styles.tabContentCard, styles.centerContent]}>
+            <Icon name="build-outline" size={40} color="#6366f1" />
+            <Text style={styles.unassignedTitle}>No hay historial de mantenimiento.</Text>
+            
+             <TouchableOpacity 
+                style={styles.assignButton}
+                onPress={() => Alert.alert('Función Pendiente', 'Navegar a la pantalla de crear solicitud de mantenimiento.')}
+              >
+                <Text style={styles.assignButtonText}>CREAR SOLICITUD</Text>
+              </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+  // ---------------------------------------------------
+
+
+  // Pestaña 1: Información de Asignación (Existente)
   const AssignmentTab = () => {
-    if (!asset) return null; // Seguridad adicional
+    if (!asset) return null; 
       
     if (asset.is_assigned) {
       return (
@@ -181,7 +266,7 @@ const AssetDetailScreen: React.FC = () => {
     );
   };
 
-  // Pestaña 2: Lista de Logs
+  // Pestaña 2: Lista de Logs (Existente)
   const LogsTab = () => {
     const sortedLogs = [...(asset?.logs || [])].sort((a, b) => b?.timestamp - a?.timestamp);
 
@@ -204,6 +289,20 @@ const AssetDetailScreen: React.FC = () => {
     );
   };
 
+  // --- FUNCIÓN PARA RENDERIZAR LA PESTAÑA ACTIVA ---
+  const renderActiveTab = () => {
+    switch(activeTab) {
+        case 'assignment':
+            return <AssignmentTab />;
+        case 'maintenance': // --- AÑADIDO: Nuevo caso ---
+            return <MaintenanceTab />; 
+        case 'logs':
+        default:
+            return <LogsTab />;
+    }
+  }
+
+
   // --- RENDERIZADO PRINCIPAL ---
 
   if (isLoading) {
@@ -215,6 +314,8 @@ const AssetDetailScreen: React.FC = () => {
     );
   }
   
+  // ... (Control de Activo no encontrado)
+
   if (!asset) {
     return (
       <SafeAreaView style={[styles.flex1, styles.loadingContainer]}>
@@ -254,7 +355,7 @@ const AssetDetailScreen: React.FC = () => {
         {/* Botón de Imprimir/Compartir (Abre el Modal del QR) */}
         <TouchableOpacity 
           style={styles.headerButton}
-          onPress={() => setIsQrModalVisible(true)} // ABRIR MODAL
+          onPress={() => setIsQrModalVisible(true)}
         >
           <Icon name="share-social-outline" size={28} color="#4f46e5" />
         </TouchableOpacity>
@@ -309,20 +410,32 @@ const AssetDetailScreen: React.FC = () => {
                 </TouchableOpacity>
               )
             }
+            
+            {/* --- AÑADIDO: Botón para la pestaña de Mantenimiento --- */}
+            <TouchableOpacity 
+              style={[styles.tabButton, activeTab === 'maintenance' && styles.activeTab]}
+              onPress={() => setActiveTab('maintenance')}
+            >
+              <Text style={[styles.tabText, activeTab === 'maintenance' && styles.activeTabText]}>
+                Mantenimiento ({assetMaintenanceList.length})
+              </Text>
+            </TouchableOpacity>
+            {/* ----------------------------------------------------- */}
+
 
             <TouchableOpacity 
               style={[styles.tabButton, activeTab === 'logs' && styles.activeTab]}
               onPress={() => setActiveTab('logs')}
             >
               <Text style={[styles.tabText, activeTab === 'logs' && styles.activeTabText]}>
-                Logs de Actividad ({asset?.logs?.length ?? 0})
+                Actividad ({asset?.logs?.length ?? 0})
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Contenido del Tab */}
           <View style={styles.tabContent}>
-            {activeTab === 'assignment' ? <AssignmentTab /> : <LogsTab />}
+            {renderActiveTab()} 
           </View>
         </View>
 
@@ -351,7 +464,7 @@ const AssetDetailScreen: React.FC = () => {
             <QrCodeGenerator 
               assetId={asset.assetId} 
               assetName={asset.asset_name} 
-              size={250} // Tamaño un poco más grande para el modal
+              size={250} 
             />
           </View>
         </View>
@@ -364,7 +477,7 @@ const AssetDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   flex1: {
     flex: 1,
-    backgroundColor: '#f3f4f6', // Gris claro
+    backgroundColor: '#f3f4f6', 
   },
   loadingContainer: {
     flex: 1,
@@ -440,7 +553,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'uppercase',
   },
-  // Data Row
   dataRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -494,7 +606,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabButton: {
-    flex: 1,
+    flex: 1, // --- MODIFICADO: Ahora las tres pestañas compartirán el espacio ---
     paddingVertical: 15,
     alignItems: 'center',
     borderBottomWidth: 3,
@@ -506,7 +618,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontWeight: '700',
     color: '#6b7280',
-    fontSize: 14,
+    fontSize: 11,
   },
   activeTabText: {
     color: '#4f46e5',
@@ -579,7 +691,7 @@ const styles = StyleSheet.create({
     marginVertical: 15,
   },
 
-  // Logs styles
+  // Logs/Maintenance styles
   flatListContent: {
     paddingHorizontal: 1,
     paddingBottom: 20,
@@ -615,6 +727,23 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   
+  // --- AÑADIDO: Estilos específicos de mantenimiento ---
+  maintenanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  maintenanceStatus: {
+      fontSize: 10,
+      fontWeight: '900',
+      borderWidth: 1,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+  },
+  // -----------------------------------------------------
+
   // MODAL STYLES
   modalOverlay: {
     flex: 1,

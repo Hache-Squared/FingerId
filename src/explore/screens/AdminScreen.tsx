@@ -94,13 +94,11 @@ const ADMIN_ACTIONS: ActionItem[] = [
     action: (navigation) => console.log('Navegar a Gestión Mantenimiento (Pendiente)'), 
     role: 'admin' 
   },
-  { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => console.log('Navegar a Mis Equipos (Pendiente)'), role: 'admin' },
-    { id: '9', iconName: 'build-outline', label: 'Reportar Mantenimiento', action: (navigation) => console.log('Navegar a Reporte Mantenimiento (Pendiente)'), role: 'admin' },
+  { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => navigation.navigate("MyAssignedAssetsScreen"), role: 'admin' },
 ];
 
 const USER_ACTIONS: ActionItem[] = [
-    { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => console.log('Navegar a Mis Equipos (Pendiente)'), role: 'user' },
-    { id: '9', iconName: 'build-outline', label: 'Reportar Mantenimiento', action: (navigation) => console.log('Navegar a Reporte Mantenimiento (Pendiente)'), role: 'user' },
+    { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => navigation.navigate("MyAssignedAssetsScreen"), role: 'user' },
 ];
 
 

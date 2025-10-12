@@ -11,7 +11,10 @@ import { useAuth } from '../../shared/hooks/useAuth';
 import { useUserProfile } from '../../shared/hooks/useUserProfile'; 
 // Importamos el tipo correcto de RTDB
 import { UserProfileData } from '../../shared/hooks/useUsers'; 
-
+/* @ts-ignore */
+import LogoAdmin from '../../assets/admin.png';
+/* @ts-ignore */
+import LogoUser from '../../assets/user.png';
 const { width } = Dimensions.get('window');
 // Ajuste de ancho para 2 columnas con margen
 const ITEM_WIDTH = (width - 25 - 25) / 2; 
@@ -258,12 +261,25 @@ const AdminScreen: React.FC = () => {
                   {userRoleDisplay} | {userInfo.department}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setModalVisible(true)}>
-                <Image
-                  source={{ uri: 'https://i.imgur.com/GzG4BfR.png' }} // Placeholder de Avatar
-                  className="w-12 h-12 rounded-full border-2 border-indigo-500/50 shadow-md"
-                />
-              </TouchableOpacity>
+              {
+                userInfo.role === "admin" ? (
+                  <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    <Image
+                      source={LogoAdmin}
+                      className="w-14 h-14 rounded-full border-2 border-indigo-500/50 shadow-md"
+                    />
+                  </TouchableOpacity>
+                ) :
+                (
+                  <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    <Image
+                      source={LogoUser}
+                      className="w-14 h-14 rounded-full border-2 border-indigo-500/50 shadow-md"
+                    />
+                  </TouchableOpacity>
+                )
+              }
+              
             </View>
 
           {

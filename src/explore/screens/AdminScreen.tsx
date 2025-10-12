@@ -53,13 +53,6 @@ const ADMIN_ACTIONS: ActionItem[] = [
     role: 'admin' 
   },
   { 
-    id: '100', 
-    iconName: 'document-text-outline', 
-    label: 'Listado De Inventario (Assets)', 
-    action: (navigation) => navigation.navigate("AssetListScreen"), 
-    role: 'admin' 
-  },
-  { 
     id: '2', 
     iconName: 'person-add-outline', 
     label: 'Registrar Usuario', 
@@ -273,14 +266,17 @@ const AdminScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <View className="flex-row items-center border border-gray-300 rounded-lg p-3 mb-8 bg-gray-50 mx-5">
+            <TouchableOpacity 
+            onPress={() => navigation.navigate("AssetListScreen")}
+            className="flex-row items-center border border-gray-300 rounded-lg p-3 mb-8 bg-gray-50 mx-5">
               <TextInput
                 className="flex-1 text-base text-gray-800"
                 placeholder="Buscar equipo por HP / Serial"
                 placeholderTextColor="#9ca3af"
+                editable={false}
               />
               <Icon name="search" size={24} color="#6b7280" />
-            </View>
+            </TouchableOpacity>
             
             <Text className="text-xl font-semibold text-gray-800 mb-5 px-5">
               Acciones Principales

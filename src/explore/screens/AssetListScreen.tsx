@@ -111,7 +111,7 @@ const AssetListScreen: React.FC = () => {
           <Icon name="arrow-back-outline" size={28} color="#1f2937" />
         </TouchableOpacity>
         <Text className="flex-1 text-center text-xl font-bold text-gray-800 mr-10">
-          Inventario ({IS_ADMIN_SIMULATION ? 'Admin' : 'Usuario'}) ({assets.length})
+          Inventario ({assets.length})
         </Text>
       </View>
       

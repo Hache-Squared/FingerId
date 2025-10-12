@@ -18,6 +18,7 @@ import { StackExploreParams } from '../../routes/StackExplore';
 // Importación del componente de generación de QR
 // AJUSTA ESTA RUTA si es diferente en tu proyecto
 import { QrCodeGenerator } from '../../shared/components/QrCodeGenerator'; 
+import { useUserProfile } from '../../shared/hooks/useUserProfile';
 
 // --- DEFINICIONES DE TIPOS (DEBE COINCIDIR CON TU ARCHIVO DE TIPOS) ---
 // Tipo de la entrada del log
@@ -61,10 +62,11 @@ const AssetDetailScreen: React.FC = () => {
 
   const { getAssetById, loading: assetLoading } = useAssets();
   const { getUserProfile } = useUsers(); 
+  const { userInfo, isLoadingProfile } = useUserProfile();
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [assignedUser, setAssignedUser] = useState<{ displayName: string, email: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'logs' | 'assignment'>('assignment'); 
+  const [activeTab, setActiveTab] = useState<'logs' | 'assignment'>('logs'); 
   
   // NUEVO ESTADO: Controla la visibilidad del Modal del QR
   const [isQrModalVisible, setIsQrModalVisible] = useState(false);
@@ -295,14 +297,18 @@ const AssetDetailScreen: React.FC = () => {
         <View style={styles.tabsContainer}>
           {/* Controles de Tab */}
           <View style={styles.tabControls}>
-            <TouchableOpacity 
-              style={[styles.tabButton, activeTab === 'assignment' && styles.activeTab]}
-              onPress={() => setActiveTab('assignment')}
-            >
-              <Text style={[styles.tabText, activeTab === 'assignment' && styles.activeTabText]}>
-                {asset.is_assigned ? 'Asignado' : 'Asignar'}
-              </Text>
-            </TouchableOpacity>
+            {
+              userInfo?.role === "admin" && (
+                <TouchableOpacity 
+                  style={[styles.tabButton, activeTab === 'assignment' && styles.activeTab]}
+                  onPress={() => setActiveTab('assignment')}
+                >
+                  <Text style={[styles.tabText, activeTab === 'assignment' && styles.activeTabText]}>
+                    {asset.is_assigned ? 'Asignado' : 'Asignar'}
+                  </Text>
+                </TouchableOpacity>
+              )
+            }
 
             <TouchableOpacity 
               style={[styles.tabButton, activeTab === 'logs' && styles.activeTab]}

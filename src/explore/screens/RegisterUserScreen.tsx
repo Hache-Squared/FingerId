@@ -162,6 +162,9 @@ const RegisterUserScreen: FC = () => {
                     valueField="value"
                     placeholder="Selecciona el departamento"
                     value={department}
+                    itemTextStyle={{
+                      color: "#111"
+                    }}
                     onChange={(item: any) => {
                         setDepartment(item.value);
                     }}
@@ -181,6 +184,9 @@ const RegisterUserScreen: FC = () => {
                     valueField="value"
                     placeholder="Selecciona el rol"
                     value={role}
+                    itemTextStyle={{
+                      color: "#111"
+                    }}
                     onChange={(item: any) => {
                         setRole(item.value as UserRole);
                     }}
@@ -268,14 +274,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 1,
     elevation: 1,
+    color:"#111"
   },
   placeholderStyle: {
     fontSize: 16,
-    color: '#9ca3af',
+    color:"#111"
   },
   selectedTextStyle: {
     fontSize: 16,
-    color: '#1f2937',
+    color:"#111"
   },
 });
 

@@ -11,7 +11,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getAuth } from 'firebase/auth';
 
@@ -19,6 +19,7 @@ import { getAuth } from 'firebase/auth';
 import { useAssets } from '../../shared/hooks/useAssets';
 import { useMaintenance, Maintenance } from '../../shared/hooks/useMaintenance';
 import { Asset } from '../../types/Asset.types';
+import { StackExploreParams } from '../../routes/StackExplore';
 
 // Obtener el usuario actual (UID)
 const auth = getAuth();
@@ -28,7 +29,7 @@ const auth = getAuth();
  * y permite solicitar mantenimiento.
  */
 const MyAssignedAssetsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<StackExploreParams>>()
   // Asumimos que useAssets devuelve solo los asignados si isAdmin: false
   const { loadAssets, assets, loading: loadingAssets, error: errorAssets } = useAssets(); 
   const { fetchActiveMaintenanceByAssetId, createMaintenanceRequest, loading: loadingMaintenance } = useMaintenance();
@@ -155,7 +156,11 @@ const MyAssignedAssetsScreen: React.FC = () => {
     }
     
     return (
-      <View style={styles.card}>
+      <TouchableOpacity 
+      onPress={() => navigation.navigate("AssetDetailScreen", {
+        assetId: asset.assetId
+      })}
+      style={styles.card}>
         <View style={styles.infoContainer}>
           <Text style={styles.assetName}>{asset.asset_name}</Text>
           <Text style={styles.assetDetail}>ID: {asset.assetId}</Text>
@@ -181,7 +186,7 @@ const MyAssignedAssetsScreen: React.FC = () => {
                 Último Mant.: {maintenanceStatus.status}. Presione para generar nuevo.
             </Text>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
   

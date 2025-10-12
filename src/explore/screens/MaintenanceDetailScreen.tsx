@@ -416,6 +416,7 @@ const styles = StyleSheet.create({
         padding: 10,
         marginRight: 10,
         fontSize: 14,
+        color: "#111"
     },
     actionButton: {
         paddingVertical: 12,

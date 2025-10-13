@@ -12,9 +12,9 @@ import { useUserProfile } from '../../shared/hooks/useUserProfile';
 // Importamos el tipo correcto de RTDB
 import { UserProfileData } from '../../shared/hooks/useUsers'; 
 /* @ts-ignore */
-import LogoAdmin from '../../assets/admin.png';
+import LogoAdmin from '../../assets/admin.jpg';
 /* @ts-ignore */
-import LogoUser from '../../assets/user.png';
+import LogoUser from '../../assets/user.jpg';
 const { width } = Dimensions.get('window');
 // Ajuste de ancho para 2 columnas con margen
 const ITEM_WIDTH = (width - 25 - 25) / 2; 

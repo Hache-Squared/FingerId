@@ -44,6 +44,7 @@ export interface Assignment {
     id?: any;
     assignedToUid: string; // El UID del usuario al que está asignado el asset
     assignedDate: number; // Fecha de la asignación
+    assignedFrom: string;
 }
 
 /**

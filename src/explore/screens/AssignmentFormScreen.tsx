@@ -66,7 +66,8 @@ const AssignmentFormScreen: React.FC = ({ }) => {
         const success = await createAssignment(
             selectedAsset.assetId, 
             selectedUser.uid, 
-            assignedUserName
+            assignedUserName,
+            user?.uid ?? "Admin Mode"
         );
 
         setMessage({ type: 'success', text: `¡Asset ${selectedAsset.assetId} asignado a ${assignedUserName}!` });

@@ -5,6 +5,7 @@ import {
 } from '../../types/Asset.types';
 import { useUsers } from './useUsers';
 import { useAssets } from './useAssets'; // Importar el hook de assets actualizado
+import { useUserProfile } from './useUserProfile';
 
 // Rutas de RTDB
 const ASSIGNMENTS_RTDB_PATH = 'assignments'; 
@@ -25,6 +26,7 @@ export const useAssignments = () => {
     error: rtdbError 
   } = useRealtimeFetch<AssignmentCollection>(); // Usamos la colección
   const { fetchAllUsers, allUsers, loadingUsers } = useUsers(); 
+  const { userInfo } = useUserProfile()
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [localLoading, setLocalLoading] = useState(false);
@@ -64,7 +66,7 @@ export const useAssignments = () => {
   /**
    * Crea una nueva asignación y actualiza el estado del Asset.
    */
-  const createAssignment = useCallback(async (assetId: string, assignedToUid: string, assignedUserName: string) => {
+  const createAssignment = useCallback(async (assetId: string, assignedToUid: string, assignedUserName: string, assignedFrom: string) => {
     setLocalLoading(true);
     
     // 1. Crear la entrada de asignación (un solo objeto)
@@ -72,6 +74,7 @@ export const useAssignments = () => {
       assetId,
       assignedToUid,
       assignedDate: Date.now(),
+      assignedFrom: assignedFrom
     };
     
     const assignmentPath = `${ASSIGNMENTS_RTDB_PATH}/${assetId}`;

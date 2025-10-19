@@ -1,34 +1,44 @@
-import { useCallback, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAssets } from './useAssets';
 import { useUsers, UserProfileData } from './useUsers';
 import { useMaintenance, Maintenance, MaintenanceStatus } from './useMaintenance';
-import { Asset, AssetLogEntry } from '../../types/Asset.types';
+// Modificado: Importar también el hook de asignaciones
+import { useAssignments } from './useAssignments'; 
+// Modificado: Importar también el tipo Assignment para usarlo en generateAssignmentReport
+import { Asset, AssetLogEntry, Assignment } from '../../types/Asset.types';
 
 // ==========================================================
 // --- INTERFACES DE SALIDA (Data Estructurada para UI) ---
 // ==========================================================
 
 // 1. REPORTE DE ASIGNACIONES ACTUALES
-interface UserAssignmentReport {
-    user: UserProfileData;
-    assignedAssets: Asset[];
+export interface AssignedAssetExtended extends Asset {
+    assignedDate: number; // FECHA DE ASIGNACIÓN AÑADIDA
+    assignedByAdminName: string; // <--- AGREGADO: Nombre del admin que asignó
 }
 
-// 2. REPORTE DE LOG DE EQUIPO
-interface AssetLogReport {
+export interface UserAssignmentReport {
+    user: UserProfileData;
+    assignedAssets: AssignedAssetExtended[]; // Usamos el tipo extendido
+}
+
+// 2. REPORTE DE LOG DE EQUIPO (GLOBAL)
+// Estructura simplificada para el reporte de todos los logs
+export interface AssetLogReport {
     asset: Asset;
     currentAssigneeName: string; // Nombre completo del usuario asignado
     logs: AssetLogEntry[];
 }
+// Reporte global es un array de AssetLogReport
 
 // 3. REPORTE DE CREACIÓN DE USUARIOS
-interface UserCreationReport {
+export interface UserCreationReport {
     user: UserProfileData;
     createdByAdminName: string; // Nombre completo del administrador que lo creó
 }
 
-// 4 & 5. REPORTE DE MANTENIMIENTOS
-interface EnrichedMaintenanceReport {
+// 4 & 5. REPORTE DE MANTENIMIENTOS ENRIQUECIDO (ORIGINAL)
+export interface EnrichedMaintenanceReport {
     maintenanceId: string;
     assetName: string; // Nombre del equipo
     assetId: string;
@@ -38,7 +48,53 @@ interface EnrichedMaintenanceReport {
     closeDate: number | null; // Timestamp de cierre (FINALIZED, DELIVERED, CANCELLED)
     totalTimeInHours: number | null; // Tiempo total en horas (cierre - inicio)
     details: string;
-    // Logs simplificados si se necesitan
+    requestedBy: string;
+}
+// Reporte global de mantenimiento es un array de EnrichedMaintenanceReport
+
+
+// ==========================================================
+// --- INTERFACES AGREGADAS PARA REPORTE AGRUPADO POR ACTIVO (Reporte 6) ---
+// ==========================================================
+
+// Log de Progreso Enriquecido (para el componente de detalle)
+export interface MaintenanceLogExtended {
+    timestamp: number;
+    message: string;
+    newStatus: MaintenanceStatus;
+    performedByUid: string;
+    performedByAdminName: string; // Nombre completo del Admin que realizó la acción
+}
+
+// Mantenimiento Enriquecido extendido con logs para la UI
+export interface MaintenanceExtended {
+    maintenanceId: string;
+    title: string; // Título del mantenimiento
+    status: MaintenanceStatus;
+    performedByAdminName: string; // Nombre del admin que cerró (o "Pendiente")
+    requestedBy: string;
+    requestDate: number; // Timestamp de inicio
+    closeDate: number | null; // Timestamp de cierre
+    totalTimeInHours: number | null; // Tiempo total en horas
+    details: string;
+    logs: MaintenanceLogExtended[]; // Logs detallados
+}
+
+// Reporte Agrupado por Activo (la estructura final)
+export interface AssetMaintenanceGroup {
+    asset: Asset;
+    maintenanceEntries: MaintenanceExtended[];
+}
+
+
+// ==========================================================
+// --- INTERFACES AGREGADAS PARA REPORTE AGRUPADO POR PERFORMER (Reporte 7) ---
+// ==========================================================
+
+// Usamos EnrichedMaintenanceReport porque ya contiene assetName/Id, y es lo que devuelve el auxiliar base.
+export interface PerformerMaintenanceGroup {
+    performerName: string; // Nombre del Administrador/Usuario que cerró el mantenimiento
+    performedMaintenances: EnrichedMaintenanceReport[];
 }
 
 
@@ -47,23 +103,58 @@ interface EnrichedMaintenanceReport {
  * la data de Assets, Users y Maintenance.
  */
 export const useReports = () => {
+    // Hooks de data fuente
     const { fetchAllUsers, allUsers } = useUsers();
-    // Nota: allUsers debe estar precargado en la app o cargarse aquí.
-    const { loadAssets, assets, loading: loadingAssets } = useAssets();
+    // NOTA: 'loadAssets' en useAssets usa la lista 'assets' como dependencia interna si no se llama.
+    const { loadAssets, assets, loading: loadingAssets } = useAssets(); 
     const { fetchAllMaintenance, loading: loadingMaintenance } = useMaintenance();
+    const { fetchAllAssignments, assignments, loading: loadingAssignments } = useAssignments(); // <--- AGREGADO: Obtener data de asignaciones
 
-    const [loading, setLoading] = useState(false);
-    const hasUsers = allUsers.length > 0;
+    // === ESTADOS INTERNOS PARA CADA REPORTE GLOBAL (EXISTENTES) ===
+    const [assignmentReport, setAssignmentReport] = useState<UserAssignmentReport[]>([]);
+    const [allAssetLogReports, setAllAssetLogReports] = useState<AssetLogReport[]>([]);
+    const [userCreationReport, setUserCreationReport] = useState<UserCreationReport[]>([]);
+    const [allAssetMaintenanceReports, setAllAssetMaintenanceReports] = useState<EnrichedMaintenanceReport[]>([]);
+    const [maintenanceReportByAdmin, setMaintenanceReportByAdmin] = useState<Record<string, EnrichedMaintenanceReport[]>>({});
+    
+    // === NUEVOS ESTADOS AGREGADOS (Reportes 6 y 7) ===
+    const [maintenanceReportByAssetGroup, setMaintenanceReportByAssetGroup] = useState<AssetMaintenanceGroup[]>([]);
+    const [maintenanceReportByPerformerGroup, setMaintenanceReportByPerformerGroup] = useState<PerformerMaintenanceGroup[]>([]); // REPORTE 7
+    
+    // === ESTADOS DE CARGA (EXISTENTES) ===
+    const [loadingAssignmentReport, setLoadingAssignmentReport] = useState(true);
+    const [loadingAllAssetLogReports, setLoadingAllAssetLogReports] = useState(true);
+    const [loadingUserCreationReport, setLoadingUserCreationReport] = useState(true);
+    const [loadingAllMaintenanceReports, setLoadingAllMaintenanceReports] = useState(true);
+    const [loadingMaintenanceReportByAdmin, setLoadingMaintenanceReportByAdmin] = useState(true);
+
+    // === NUEVOS ESTADOS DE CARGA AGREGADOS (Reportes 6 y 7) ===
+    const [loadingMaintenanceReportByAssetGroup, setLoadingMaintenanceReportByAssetGroup] = useState(true);
+    const [loadingMaintenanceReportByPerformerGroup, setLoadingMaintenanceReportByPerformerGroup] = useState(true); // REPORTE 7
+    
+    // Bandera para saber si la data base (users/assets/assignments) ya está lista
+    const baseDataReady = allUsers.length > 0 && assets.length > 0 && assignments.length > 0; // <--- MODIFICADO: Incluir assignments
 
     /**
      * Función interna de utilidad para precargar toda la data necesaria.
      */
-    const loadAllData = useCallback(async () => {
-        if (!hasUsers) {
-            await fetchAllUsers();
+    const loadDependencies = async () => {
+        try {
+            if (allUsers.length === 0) {
+                await fetchAllUsers();
+            }
+            if (assets.length === 0) {
+                // Forzamos la carga de todos los assets (null, true)
+                await (loadAssets as any)(null, true);
+            }
+            if (assignments.length === 0) { // <--- AGREGADO: Cargar asignaciones
+                await fetchAllAssignments();
+            }
+        } catch(e) {
+            console.error("Error initial loading for reports:", e);
         }
-    }, [hasUsers, fetchAllUsers]);
-
+    };
+    
     /**
      * Devuelve el nombre completo del usuario a partir de su UID.
      */
@@ -77,88 +168,64 @@ export const useReports = () => {
      */
     const calculateTimeInHours = (start: number, end: number): number => {
         const diffMs = end - start;
-        return diffMs / (1000 * 60 * 60); // Convertir milisegundos a horas
+        return diffMs / (1000 * 60 * 60);
+    };
+
+    // ==========================================================
+    // --- 1. FUNCIÓN DE CÁLCULO: REPORTE DE ASIGNACIONES (MODIFICADO) ---
+    // ==========================================================
+    const generateAssignmentReport = (
+        users: UserProfileData[], 
+        allAssets: Asset[],
+        allAssignments: Assignment[] // <--- MODIFICADO: Aceptar allAssignments
+    ): UserAssignmentReport[] => {
+        
+        // 1. Crear un mapa de asignaciones (AssetId -> Assignment) para fácil acceso
+        const assignmentMap = allAssignments.reduce((acc, a) => {
+            if (a.assetId) {
+                acc[a.assetId] = a;
+            }
+            return acc;
+        }, {} as Record<string, Assignment>);
+        
+        // 2. Agrupar los assets por el UID del usuario asignado
+        const assignedAssetsMap = allAssets
+            .filter(a => a.is_assigned && a.current_user_uid)
+            .reduce((acc, asset) => {
+                const uid = asset.current_user_uid!;
+                if (!acc[uid]) acc[uid] = [];
+                
+                // Buscar la fecha de asignación en logs (Lógica existente)
+                const assignmentLog = asset.logs?.find(log => log.action === 'ASSIGNED');
+                const assignedDate = assignmentLog ? assignmentLog.timestamp : 0; 
+
+                // OBTENER EL NOMBRE DEL ADMINISTRADOR QUE ASIGNÓ USANDO EL MAPA
+                const assignmentData = assignmentMap[asset.assetId];
+                const assignedByAdminName = assignmentData?.assignedFrom 
+                    ? getFullName(assignmentData.assignedFrom) // Usar assignedFrom
+                    : 'Desconocido/Sistema'; // Fallback si no está el dato en la colección de asignaciones
+                
+                acc[uid].push({
+                    ...asset,
+                    assignedDate,
+                    assignedByAdminName, // <--- AGREGADO: Nombre del admin
+                } as AssignedAssetExtended);
+                return acc;
+            }, {} as Record<string, AssignedAssetExtended[]>);
+
+        // 3. Generar el reporte para todos los usuarios
+        return users.map(user => ({
+            user,
+            assignedAssets: assignedAssetsMap[user.uid] || [],
+        }));
     };
     
     // ==========================================================
-    // --- 1. REPORTE DE ASIGNACIONES ACTUALES (GLOBAL) ---
+    // --- 2. FUNCIÓN DE CÁLCULO: REPORTE DE LOG DE TODOS LOS EQUIPOS (ORIGINAL) ---
     // ==========================================================
-
-    /**
-     * REPORTE: Muestra todos los usuarios y los equipos que tienen asignados.
-     */
-    const getAssignmentReport = useCallback(async (): Promise<UserAssignmentReport[]> => {
-        setLoading(true);
-        try {
-            await loadAllData();
-            // Carga todos los assets (necesitamos todos para ver las asignaciones)
-            // Nota: Aquí se está usando el fetchData interno de useAssets para obtener TODOS
-            // ya que loadAssets aplica filtros por defecto si no se llama con (null, true).
-            // Usaremos una carga de todos los assets.
-            // Puesto que useAssets no expone directamente el fetch sin filtros de admin/user,
-            // asumiremos que la lista 'assets' ya fue precargada con TODOS los assets 
-            // en la app para un admin (o la llamamos con loadAssets(null, true))
-            
-            // Alternativa segura si useAssets está siendo usado en una pantalla Admin:
-            // await loadAssets(null, true); 
-            // Usaremos la lista 'assets' ya cargada.
-            
-            if (assets.length === 0) {
-                // Si la lista local está vacía, hacemos un fetch global sin filtros
-                await (loadAssets as any)(null, true);
-            }
-
-            const report: UserAssignmentReport[] = [];
-            
-            // Agrupar los assets por el UID del usuario asignado
-            const assignedAssetsMap = assets
-                .filter(a => a.is_assigned && a.current_user_uid)
-                .reduce((acc, asset) => {
-                    const uid = asset.current_user_uid!;
-                    if (!acc[uid]) acc[uid] = [];
-                    acc[uid].push(asset);
-                    return acc;
-                }, {} as Record<string, Asset[]>);
-
-            // Generar el reporte para todos los usuarios (incluyendo los que no tienen nada)
-            allUsers.forEach(user => {
-                report.push({
-                    user,
-                    assignedAssets: assignedAssetsMap[user.uid] || [],
-                });
-            });
-
-            return report;
-        } catch (e) {
-            console.error("Error generating assignment report:", e);
-            return [];
-        } finally {
-            setLoading(false);
-        }
-    }, [loadAllData, allUsers, assets, loadAssets]);
-    
-    // ==========================================================
-    // --- 2. REPORTE DE LOG DE EQUIPO (POR EQUIPO) ---
-    // ==========================================================
-
-    /**
-     * REPORTE: Muestra el log de un equipo específico.
-     * @param assetId ID del equipo.
-     */
-    const getAssetLogReport = useCallback(async (assetId: string): Promise<AssetLogReport | null> => {
-        setLoading(true);
-        try {
-            await loadAllData();
-            
-            // Buscamos el asset en la lista global (o lo obtenemos directamente)
-            const asset = assets.find(a => a.assetId === assetId);
-
-            if (!asset) {
-                // Alternativa: Si no está en la lista local, intentar fetch de uno solo.
-                // Aunque useAssets no expone un fetch global, se asumirá que asset está en 'assets'.
-                return null; 
-            }
-
+    const generateAllAssetLogReports = (allAssets: Asset[]): AssetLogReport[] => {
+        // ... (Lógica original de generateAllAssetLogReports)
+        return allAssets.map(asset => {
             const currentAssigneeName = asset.current_user_uid
                 ? getFullName(asset.current_user_uid)
                 : 'Nadie';
@@ -166,74 +233,47 @@ export const useReports = () => {
             return {
                 asset,
                 currentAssigneeName,
-                logs: (asset?.logs ?? [])?.sort((a, b) => b.timestamp - a.timestamp), // Ordenar cronológicamente inverso
+                // Logs ordenados cronológicamente inverso
+                logs: (asset?.logs ?? [])?.sort((a, b) => b.timestamp - a.timestamp), 
             };
-
-        } catch (e) {
-            console.error(`Error generating log report for asset ${assetId}:`, e);
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    }, [loadAllData, assets, getFullName]);
+        });
+    };
 
     // ==========================================================
-    // --- 3. REPORTE DE CREACIÓN DE USUARIOS (GLOBAL) ---
+    // --- 3. FUNCIÓN DE CÁLCULO: REPORTE DE CREACIÓN DE USUARIOS (ORIGINAL) ---
     // ==========================================================
-
-    /**
-     * REPORTE: Muestra quién creó a cada usuario.
-     */
-    const getUserCreationReport = useCallback(async (): Promise<UserCreationReport[]> => {
-        setLoading(true);
-        try {
-            await loadAllData();
-            
-            const report: UserCreationReport[] = allUsers
-                // Filtramos por usuarios creados por alguien más (tienen createdByUid)
-                .filter(u => u.createdByUid) 
-                .map(user => {
-                    // Si no tiene createdByUid (ej: creado manualmente o primer admin)
-                    const createdByUid = user.createdByUid || 'SYSTEM_UNAUTH'; 
-                    const createdByAdminName = getFullName(createdByUid);
-                    
-                    return {
-                        user,
-                        createdByAdminName: createdByAdminName === `Usuario Desconocido (${createdByUid})` 
-                            ? 'Sistema/Admin Inicial' 
-                            : createdByAdminName,
-                    };
-                });
-
-            return report.sort((a, b) => (a.createdByAdminName > b.createdByAdminName ? 1 : -1));
-
-        } catch (e) {
-            console.error("Error generating user creation report:", e);
-            return [];
-        } finally {
-            setLoading(false);
-        }
-    }, [loadAllData, allUsers, getFullName]);
+    const generateUserCreationReport = (users: UserProfileData[]): UserCreationReport[] => {
+        // ... (Lógica original de generateUserCreationReport)
+        return users
+            .filter(u => u.createdByUid) 
+            .map(user => {
+                const createdByUid = user.createdByUid || 'SYSTEM_UNAUTH'; 
+                const createdByAdminName = getFullName(createdByUid);
+                
+                return {
+                    user,
+                    createdByAdminName: createdByAdminName === `Usuario Desconocido (${createdByUid})` 
+                        ? 'Sistema/Admin Inicial' 
+                        : createdByAdminName,
+                };
+            })
+            .sort((a, b) => (a.createdByAdminName > b.createdByAdminName ? 1 : -1));
+    };
 
     // ==========================================================
-    // --- 4 & 5. REPORTE DE MANTENIMIENTOS (AUXILIAR) ---
+    // --- 4 & 5. AUXILIAR: ENRIQUECIMIENTO DE MANTENIMIENTOS (ORIGINAL) ---
     // ==========================================================
-    
-    /**
-     * Utilidad para enriquecer una lista de mantenimientos con nombres y tiempos.
-     */
-    const enrichMaintenanceData = useCallback((
+    const enrichMaintenanceData = (
         maintenanceList: Maintenance[], 
         assetsList: Asset[]
     ): EnrichedMaintenanceReport[] => {
-        
+        // ... (Lógica original de enrichMaintenanceData)
         return maintenanceList.map(m => {
             const asset = assetsList.find(a => a.assetId === m.assetId);
             const assetName = asset?.asset_name || `Activo Desconocido (${m.assetId})`;
             
-            // Buscar el último log de FINALIZED, DELIVERED o CANCELLED
             const latestTerminalLogKey = Object.keys(m.progressLog)
-                .sort((a, b) => Number(b) - Number(a)) // Ordenar descendente por timestamp (key)
+                .sort((a, b) => Number(b) - Number(a)) 
                 .find(key => {
                     const status = m.progressLog[key].newStatus;
                     return status === 'FINALIZED' || status === 'DELIVERED' || status === 'CANCELLED';
@@ -242,6 +282,7 @@ export const useReports = () => {
             const closeDate = latestTerminalLogKey ? Number(latestTerminalLogKey) : null;
             const adminUid = latestTerminalLogKey ? m.progressLog[latestTerminalLogKey].performedByUid : 'N/A';
             const adminName = adminUid !== 'N/A' ? getFullName(adminUid) : 'Pendiente';
+            const requestedBy = getFullName(m.requestedByUid) ?? '';
             
             const totalTimeInHours = closeDate
                 ? calculateTimeInHours(m.requestDate, closeDate)
@@ -257,89 +298,299 @@ export const useReports = () => {
                 closeDate,
                 totalTimeInHours,
                 details: m.details,
+                requestedBy
             };
         });
-    }, [getFullName]);
-
-
-    // ==========================================================
-    // --- 4. REPORTE DE MANTENIMIENTOS DE UN EQUIPO (POR EQUIPO) ---
-    // ==========================================================
-
-    /**
-     * REPORTE: Muestra todos los mantenimientos de un equipo.
-     * @param assetId ID del equipo.
-     */
-    const getMaintenanceReportByAsset = useCallback(async (assetId: string): Promise<EnrichedMaintenanceReport[]> => {
-        setLoading(true);
-        try {
-            await loadAllData();
-            
-            // Cargar todos los mantenimientos y todos los assets
-            const allMaintenance = await fetchAllMaintenance();
-            
-            if (assets.length === 0) { await (loadAssets as any)(null, true); }
-
-            // 1. Filtrar solo los mantenimientos del equipo
-            const filteredMaintenance = allMaintenance.filter(m => m.assetId === assetId);
-
-            // 2. Enriquecer los datos
-            const report = enrichMaintenanceData(filteredMaintenance, assets);
-
-            return report.sort((a, b) => b.requestDate - a.requestDate); // Más reciente primero
-
-        } catch (e) {
-            console.error(`Error generating maintenance report for asset ${assetId}:`, e);
-            return [];
-        } finally {
-            setLoading(false);
-        }
-    }, [loadAllData, fetchAllMaintenance, assets, loadAssets, enrichMaintenanceData]);
+    };
     
     // ==========================================================
-    // --- 5. REPORTE DE MANTENIMIENTOS HECHOS POR ADMIN (GLOBAL) ---
+    // --- 4. FUNCIÓN DE CÁLCULO: REPORTE DE MANTENIMIENTO DE TODOS LOS EQUIPOS (ORIGINAL) ---
+    // ==========================================================
+    const generateAllAssetMaintenanceReports = async (assetsList: Asset[]): Promise<EnrichedMaintenanceReport[]> => {
+        const allMaintenance = await fetchAllMaintenance(); // Aseguramos que se obtengan todos
+        const report = enrichMaintenanceData(allMaintenance, assetsList);
+        return report.sort((a, b) => b.requestDate - a.requestDate);
+    };
+
+    // ==========================================================
+    // --- 5. FUNCIÓN DE CÁLCULO: REPORTE DE MANTENIMIENTOS POR ADMIN (ORIGINAL) ---
+    // ==========================================================
+    const generateMaintenanceReportByAdmin = async (assetsList: Asset[]): Promise<Record<string, EnrichedMaintenanceReport[]>> => {
+        const allMaintenance = await fetchAllMaintenance();
+        const enrichedList = enrichMaintenanceData(allMaintenance, assetsList);
+        
+        // Agrupar por el nombre del administrador que cerró (o 'Pendiente')
+        const report = enrichedList.reduce((acc, reportItem) => {
+            const adminKey = reportItem.adminName;
+            if (!acc[adminKey]) acc[adminKey] = [];
+            acc[adminKey].push(reportItem);
+            return acc;
+        }, {} as Record<string, EnrichedMaintenanceReport[]>);
+        
+        return report;
+    };
+
+
+    // ==========================================================
+    // --- LOGICA AGREGADA: REPORTE AGRUPADO POR ACTIVO (Reporte 6) ---
     // ==========================================================
 
     /**
-     * REPORTE: Muestra todos los mantenimientos agrupados por el Admin que los finalizó.
+     * Auxiliar: Aplana y enriquece el progressLog de un mantenimiento, incluyendo el nombre del Admin.
      */
-    const getMaintenanceReportByAdmin = useCallback(async (): Promise<Record<string, EnrichedMaintenanceReport[]>> => {
-        setLoading(true);
-        try {
-            await loadAllData();
-
-            // Cargar todos los mantenimientos y todos los assets
-            const allMaintenance = await fetchAllMaintenance();
-
-            if (assets.length === 0) { await (loadAssets as any)(null, true); }
-
-            // 1. Enriquecer todos los mantenimientos
-            const enrichedList = enrichMaintenanceData(allMaintenance, assets);
+    const getExtendedLogs = (maintenance: Maintenance): MaintenanceLogExtended[] => {
+        if (!maintenance.progressLog) return [];
+        
+        return Object.keys(maintenance.progressLog)
+            .sort((a, b) => Number(a) - Number(b)) // Ordenar cronológicamente ascendente
+            .map(timestampKey => {
+                const log = maintenance.progressLog[timestampKey];
+                return {
+                    ...log,
+                    timestamp: Number(timestampKey), // Asegurar que el timestamp es un número
+                    performedByAdminName: getFullName(log.performedByUid),
+                };
+            });
+    };
+    
+    /**
+     * Auxiliar: Convierte el Maintenance crudo a MaintenanceExtended (con logs y Admin Name).
+     */
+    const toMaintenanceExtended = (maintenance: Maintenance, assetName: string): MaintenanceExtended => {
+        const extendedLogs = getExtendedLogs(maintenance);
+        
+        // Buscar la última entrada terminal (para el cierre)
+        const latestTerminalLog = extendedLogs
+            .filter(log => ['FINALIZED', 'DELIVERED', 'CANCELLED'].includes(log.newStatus))
+            .pop(); // Obtener el último de ellos
             
-            // 2. Agrupar por el nombre del administrador que cerró (o 'Pendiente')
-            const report = enrichedList.reduce((acc, reportItem) => {
-                const adminKey = reportItem.adminName;
-                if (!acc[adminKey]) acc[adminKey] = [];
-                acc[adminKey].push(reportItem);
-                return acc;
-            }, {} as Record<string, EnrichedMaintenanceReport[]>);
+        const closeDate = latestTerminalLog?.timestamp ?? null;
+        const adminName = latestTerminalLog ? getFullName(latestTerminalLog.performedByUid) : 'Pendiente';
 
-            return report;
-        } catch (e) {
-            console.error("Error generating maintenance report by admin:", e);
-            return {};
-        } finally {
-            setLoading(false);
+        const totalTimeInHours = closeDate
+            ? calculateTimeInHours(maintenance.requestDate, closeDate)
+            : null;
+
+        return {
+            maintenanceId: maintenance.maintenanceId,
+            title: maintenance.title,
+            status: maintenance.status,
+            performedByAdminName: adminName,
+            requestedBy: getFullName(maintenance.requestedByUid) ?? "",
+            requestDate: maintenance.requestDate,
+            closeDate,
+            totalTimeInHours,
+            details: maintenance.details,
+            logs: extendedLogs,
+        };
+    };
+
+    /**
+     * 6. FUNCIÓN DE CÁLCULO: REPORTE DE MANTENIMIENTOS POR EQUIPO (AGRUPADO)
+     */
+    const generateMaintenanceReportByAssetGroup = async (assetsList: Asset[]): Promise<AssetMaintenanceGroup[]> => {
+        const allMaintenance = await fetchAllMaintenance(); // Aseguramos que se obtengan todos
+
+        // 1. Agrupar mantenimientos crudos por AssetId
+        const maintenanceMap = allMaintenance.reduce((acc, m) => {
+            if (!acc[m.assetId]) acc[m.assetId] = [];
+            acc[m.assetId].push(m);
+            return acc;
+        }, {} as Record<string, Maintenance[]>);
+
+        // 2. Crear las secciones AssetMaintenanceGroup
+        return assetsList
+            .map(asset => {
+                const maintenanceList = maintenanceMap[asset.assetId] || [];
+                
+                // Enriquecer y ordenar los mantenimientos para este activo
+                const maintenanceEntries: MaintenanceExtended[] = maintenanceList
+                    .map(m => toMaintenanceExtended(m, asset.asset_name))
+                    .sort((a, b) => b.requestDate - a.requestDate); // Más reciente primero
+
+                return {
+                    asset,
+                    maintenanceEntries,
+                };
+            })
+            // Ordenar por nombre de activo para la UI
+            .sort((a, b) => a.asset.asset_name.localeCompare(b.asset.asset_name)); 
+    };
+    
+    // ==========================================================
+    // --- LOGICA AGREGADA: REPORTE AGRUPADO POR PERFORMER (Reporte 7) ---
+    // ==========================================================
+
+    /**
+     * 7. FUNCIÓN DE CÁLCULO: REPORTE DE MANTENIMIENTOS POR ADMINISTRADOR QUE LO REALIZÓ (CERRÓ)
+     */
+    const generateMaintenanceReportByPerformerGroup = async (assetsList: Asset[]): Promise<PerformerMaintenanceGroup[]> => {
+        const allMaintenance = await fetchAllMaintenance(); 
+        // Usamos la función original de enriquecimiento (4&5) que devuelve assetName y assetId
+        const enrichedMaintenanceList = enrichMaintenanceData(allMaintenance, assetsList);
+        
+        // 1. Agrupar por el nombre del administrador (adminName)
+        const performerMap = enrichedMaintenanceList.reduce((acc, m) => {
+            // Solo agrupamos los que fueron cerrados (adminName !== 'Pendiente')
+            if (m.adminName === 'Pendiente') return acc;
+            
+            const performerName = m.adminName;
+            if (!acc[performerName]) acc[performerName] = [];
+            acc[performerName].push(m); 
+            return acc;
+        }, {} as Record<string, EnrichedMaintenanceReport[]>);
+
+        // 2. Convertir el mapa a un array de PerformerMaintenanceGroup
+        return Object.keys(performerMap)
+            .map(performerName => ({
+                performerName,
+                // Ordenar mantenimientos por fecha de solicitud (o cierre)
+                performedMaintenances: performerMap[performerName].sort((a, b) => b.requestDate - a.requestDate),
+            }))
+            // Ordenar grupos por nombre del performer
+            .sort((a, b) => a.performerName.localeCompare(b.performerName));
+    };
+
+
+    // ==========================================================
+    // --- EFECTO PRINCIPAL: CARGA Y CÁLCULO DE TODOS LOS REPORTES ---
+    // ==========================================================
+    useEffect(() => {
+        let isMounted = true;
+        
+        loadDependencies(); // Aseguramos que la data base se cargue
+
+        // Solo ejecutar los cálculos si la data base está lista
+        if (baseDataReady) {
+            
+            // --- CÁLCULO 1, 2, 3 (EXISTENTE) ---
+            setLoadingAssignmentReport(true);
+            try {
+                // MODIFICADO: Pasamos el array de assignments
+                const report = generateAssignmentReport(allUsers, assets, assignments);
+                if (isMounted) setAssignmentReport(report);
+            } catch (e) {
+                console.error("Error generating assignment report:", e);
+                if (isMounted) setAssignmentReport([]);
+            } finally {
+                if (isMounted) setLoadingAssignmentReport(false);
+            }
+            
+            setLoadingAllAssetLogReports(true);
+            try {
+                const report = generateAllAssetLogReports(assets);
+                if (isMounted) setAllAssetLogReports(report);
+            } catch (e) {
+                console.error("Error generating all asset log reports:", e);
+                if (isMounted) setAllAssetLogReports([]);
+            } finally {
+                if (isMounted) setLoadingAllAssetLogReports(false);
+            }
+
+            setLoadingUserCreationReport(true);
+            try {
+                const report = generateUserCreationReport(allUsers);
+                if (isMounted) setUserCreationReport(report);
+            } catch (e) {
+                console.error("Error generating user creation report:", e);
+                if (isMounted) setUserCreationReport([]);
+            } finally {
+                if (isMounted) setLoadingUserCreationReport(false);
+            }
+            
+            // --- CÁLCULO 4, 5, 6 & 7: REPORTES DE MANTENIMIENTO (ASÍNCRONOS) ---
+            const calculateMaintenanceReports = async () => {
+                setLoadingAllMaintenanceReports(true);
+                setLoadingMaintenanceReportByAdmin(true);
+                setLoadingMaintenanceReportByAssetGroup(true); 
+                setLoadingMaintenanceReportByPerformerGroup(true); // REPORTE 7: START
+
+                try {
+                    // CÁLCULO 4: Mantenimiento de todos los equipos (ORIGINAL)
+                    const allMaintReport = await generateAllAssetMaintenanceReports(assets);
+                    if (isMounted) setAllAssetMaintenanceReports(allMaintReport);
+
+                    // CÁLCULO 5: Mantenimiento por Admin (ORIGINAL)
+                    const maintByAdminReport = await generateMaintenanceReportByAdmin(assets);
+                    if (isMounted) setMaintenanceReportByAdmin(maintByAdminReport);
+                    
+                    // CÁLCULO 6: Mantenimiento por Equipo (Agrupado) (NUEVO)
+                    const maintByAssetGroupReport = await generateMaintenanceReportByAssetGroup(assets);
+                    if (isMounted) setMaintenanceReportByAssetGroup(maintByAssetGroupReport); 
+                    
+                    // CÁLCULO 7: Mantenimiento por Performer (Agrupado) (NUEVO)
+                    const maintByPerformerGroupReport = await generateMaintenanceReportByPerformerGroup(assets);
+                    if (isMounted) setMaintenanceReportByPerformerGroup(maintByPerformerGroupReport);
+
+                } catch (e) {
+                    console.error("Error generating maintenance reports:", e);
+                    if (isMounted) {
+                        setAllAssetMaintenanceReports([]);
+                        setMaintenanceReportByAdmin({});
+                        setMaintenanceReportByAssetGroup([]); 
+                        setMaintenanceReportByPerformerGroup([]); // REPORTE 7: FALLBACK
+                    }
+                } finally {
+                    if (isMounted) {
+                        setLoadingAllMaintenanceReports(false);
+                        setLoadingMaintenanceReportByAdmin(false);
+                        setLoadingMaintenanceReportByAssetGroup(false); 
+                        setLoadingMaintenanceReportByPerformerGroup(false); // REPORTE 7: END
+                    }
+                }
+            };
+            calculateMaintenanceReports();
         }
-    }, [loadAllData, fetchAllMaintenance, assets, loadAssets, enrichMaintenanceData]);
 
+        return () => { isMounted = false; };
+        // El efecto se re-ejecuta cuando la data base (users/assets/assignments) está lista
+    }, [allUsers, assets, assignments, fetchAllUsers, loadAssets, fetchAllMaintenance, baseDataReady, fetchAllAssignments]); // <--- MODIFICADO: Añadir dependencias de assignments
+
+
+    // ==========================================================
+    // --- GETTERS FUNCIONALES (ORIGINALES) ---
+    // ==========================================================
+
+    /**
+     * REPORTE: Muestra el log de un equipo específico. (Getter simple, no guarda estado)
+     */
+    const getAssetLogReportById = (assetId: string): AssetLogReport | null => {
+        return allAssetLogReports.find(r => r.asset.assetId === assetId) || null;
+    };
+
+    /**
+     * REPORTE: Muestra todos los mantenimientos de un equipo. (Getter simple, no guarda estado)
+     * NOTA: Sigue usando el estado original 'allAssetMaintenanceReports'.
+     */
+    const getMaintenanceReportByAssetId = (assetId: string): EnrichedMaintenanceReport[] => {
+        return allAssetMaintenanceReports.filter(r => r.assetId === assetId);
+    };
+
+    // --- Retorno del Hook ---
     return {
-        loading: loading || loadingAssets || loadingMaintenance,
-        // Funciones de Reporte
-        getAssignmentReport,
-        getAssetLogReport,
-        getUserCreationReport,
-        getMaintenanceReportByAsset,
-        getMaintenanceReportByAdmin,
+        // --- ESTADOS DE REPORTE (EXISTENTES) ---
+        assignmentReport,
+        allAssetLogReports,
+        userCreationReport,
+        allAssetMaintenanceReports,
+        maintenanceReportByAdmin,
+        maintenanceReportByAssetGroup, 
+        maintenanceReportByPerformerGroup, // REPORTE 7: ESTADO
+
+        // --- ESTADOS DE CARGA AGRUPADOS ---
+        loadingAssignmentReport,
+        loadingAllAssetLogReports,
+        loadingUserCreationReport,
+        // Agregamos el nuevo loading al cálculo de carga general de mantenimientos
+        loadingAllMaintenanceReports: loadingAllMaintenanceReports || loadingMaintenanceReportByAdmin || loadingMaintenanceReportByAssetGroup || loadingMaintenanceReportByPerformerGroup,
+        loadingMaintenanceReportByAssetGroup, // EXPOSICIÓN INDIVIDUAL
+        loadingMaintenanceReportByPerformerGroup, // REPORTE 7: LOADING
+        
+        // --- GETTERS POR ID (EXISTENTES) ---
+        getAssetLogReportById,
+        getMaintenanceReportByAssetId,
+
+        // --- ESTADO DE CARGA GENERAL (para otros reportes que se hagan on-demand) ---
+        loading: loadingAssets || loadingMaintenance || loadingAssignments, // <--- MODIFICADO: Añadir loadingAssignments
     };
 };

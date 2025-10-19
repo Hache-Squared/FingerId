@@ -189,6 +189,28 @@ const AssetLogReportTab: React.FC = () => {
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
+
+        <TouchableOpacity 
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          backgroundColor: '#130f40',
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 3,
+          elevation: 5,
+        }}
+        onPress={() => console.log('Botón presionado')}
+      >
+        <Icon name="bar-chart-outline" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 };

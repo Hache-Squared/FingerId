@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 // Asumo que el path es correcto, importa el hook y las interfaces necesarias.
 import { 
     useReports, 
     PerformerMaintenanceGroup,
     EnrichedMaintenanceReport,
 } from '../../../shared/hooks/useReports'; 
-
+import Icon from 'react-native-vector-icons/Ionicons';
 // --- UTILERÍAS DE FORMATO ---
 
 /**
@@ -143,19 +143,42 @@ const MaintenanceByAdminReportTab: React.FC = () => {
 
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>REPORTE DE MANTENIMIENTOS POR ADMINISTRADOR</Text>
-      
-      {/* 3. Mapeo principal sobre los Performers agrupados */}
-      {groupsWithMaintenance.map((performerGroup) => (
-        <PerformerGroup 
-            key={performerGroup?.performerName} 
-            performerGroup={performerGroup} 
-        />
-      ))}
-      
-      <View style={{ height: 50 }} /> 
-    </ScrollView>
+    <>
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>REPORTE DE MANTENIMIENTOS POR ADMINISTRADOR</Text>
+        
+        {/* 3. Mapeo principal sobre los Performers agrupados */}
+        {groupsWithMaintenance.map((performerGroup) => (
+          <PerformerGroup 
+              key={performerGroup?.performerName} 
+              performerGroup={performerGroup} 
+          />
+        ))}
+        
+        <View style={{ height: 50 }} /> 
+      </ScrollView>
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          backgroundColor: '#130f40',
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 3,
+          elevation: 5,
+        }}
+        onPress={() => console.log('Botón presionado')}
+      >
+        <Icon name="bar-chart-outline" size={28} color="#fff" />
+      </TouchableOpacity>
+    </>
   );
 };
 

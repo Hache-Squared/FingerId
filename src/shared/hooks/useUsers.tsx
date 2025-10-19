@@ -34,6 +34,7 @@ export interface UserProfileData {
   department: string;
   role: UserRole; // 'admin' o 'user'
   employeeId: string; // Número de empleado o matrícula
+  createdByUid: string;
   // Agrega otros campos de data que necesites
 }
 

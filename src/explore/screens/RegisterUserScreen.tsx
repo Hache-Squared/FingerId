@@ -27,7 +27,7 @@ const departmentOptions = [
 const RegisterUserScreen: FC = () => {
   const navigation = useNavigation();
   const { registerUser, loading: usersLoading, error: usersError } = useUsers();
-  
+  const { userInfo } = useUserProfile();
   // Estados del formulario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -62,6 +62,7 @@ const RegisterUserScreen: FC = () => {
       employeeId: employeeId.trim(),
       department: department,
       role: role,
+      createdByUid: userInfo?.uid ?? "Admin"
     };
 
     const newUid = await registerUser(email.trim(), password.trim(), profileData);

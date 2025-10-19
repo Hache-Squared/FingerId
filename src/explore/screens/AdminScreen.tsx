@@ -90,6 +90,13 @@ const ADMIN_ACTIONS: ActionItem[] = [
     action: (navigation) => navigation.navigate("AdminMaintenanceScreen"), 
     role: 'admin' 
   },
+  { 
+    id: '5', 
+    iconName: 'bar-chart-outline', 
+    label: 'Reportes', 
+    action: (navigation) => navigation.navigate("ReportsScreen"), 
+    role: 'admin' 
+  },
   { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => navigation.navigate("MyAssignedAssetsScreen"), role: 'admin' },
 ];
 

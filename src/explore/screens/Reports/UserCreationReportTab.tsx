@@ -6,10 +6,16 @@ import {
   FlatList, 
   ActivityIndicator, 
   SectionList,
-  TouchableOpacity, // Usaremos SectionList para agrupar
+  TouchableOpacity,
+  Alert, // <--- AGREGADO: Para mostrar mensajes de éxito/error
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+
+// Importación del hook y tipos
 import { useReports, UserCreationReport } from '../../../shared/hooks/useReports'; 
+
+// Importación del hook de generación de PDF
+import { usePdfGenerator } from '../../../shared/hooks/usePdfGenerator'; // <--- AGREGADO: Asegúrate de ajustar la ruta
 
 // --- Tipado para la SectionList ---
 interface CreatorSection {
@@ -17,20 +23,130 @@ interface CreatorSection {
     data: UserCreationReport[]; // Lista de usuarios que creó
 }
 
+// ===================================================================
+// UTILITY: FORMATO DE FECHA
+// ===================================================================
+const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+// ===================================================================
+// FUNCIÓN AUXILIAR: GENERACIÓN DE HTML para PDF (NUEVA LÓGICA)
+// ===================================================================
+
+/**
+ * Genera el string HTML para el reporte de Usuarios Creados en formato de tabla.
+ * @param reportData El array de secciones agrupadas (CreatorSection[]).
+ */
+const generateUserCreationReportHtml = (sections: CreatorSection[]): string => {
+    // Definir estilos para el PDF
+    const styles = `
+        <style>
+            body { font-family: sans-serif; margin: 20px; font-size: 10px; }
+            h1 { color: #1f2937; text-align: center; margin-bottom: 20px; font-size: 18px; }
+            .report-date { text-align: center; color: #6b7280; margin-bottom: 30px; font-size: 11px; }
+            
+            /* Estilos de Sección (Creador) */
+            .section-header { 
+                background-color: #e5e7eb; 
+                padding: 10px 15px; 
+                margin-top: 15px;
+                border-bottom: 2px solid #d1d5db;
+                font-size: 14px; 
+                font-weight: 800;
+                color: #1f2937;
+                page-break-after: avoid;
+            }
+            .section-count {
+                font-size: 12px;
+                font-weight: 500;
+                color: #4b5563;
+                margin-left: 10px;
+            }
+
+            /* Estilos de Tabla */
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; vertical-align: top; }
+            th { background-color: #f3f4f6; color: #1f2937; font-weight: 700; font-size: 11px; }
+            
+            /* Colores de las celdas de Rol */
+            .role-admin { background-color: #dbeafe; color: #1e40af; font-weight: 700; }
+            .role-user { background-color: #f0fdf4; color: #065f46; font-weight: 700; }
+            
+            .empty { color: #9ca3af; text-align: center; font-style: italic; padding: 10px; }
+        </style>
+    `;
+    
+    // Mapeo de la data agrupada a elementos HTML
+    const reportHtml = sections.map(section => {
+        const userCount = section.data.length;
+        
+        // Cabecera de la sección
+        let htmlContent = `<h3 class="section-header">${section.title} <span class="section-count">(${userCount} usuario${userCount !== 1 ? 's' : ''} creados)</span></h3>`;
+
+        // Cuerpo de la tabla
+        const tableBody = section.data.map(item => `
+            <tr>
+                <td class="${item.user.role === 'admin' ? 'role-admin' : 'role-user'}">${item.user.role.toUpperCase()}</td>
+                <td>${item.user.firstName} ${item.user.lastName}</td>
+                <td>${item.user.email}</td>
+            </tr>
+        `).join('');
+
+        // Estructura de la tabla
+        htmlContent += `
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Rol</th>
+                        <th style="width: 30%;">Nombre Completo</th>
+                        <th style="width: 35%;">Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableBody}
+                </tbody>
+            </table>
+        `;
+
+        return htmlContent;
+    }).join('');
+
+    // Estructura HTML final
+    return `
+        <html>
+        <head>${styles}</head>
+        <body>
+            <h1>REPORTE DE CREACIÓN DE USUARIOS</h1>
+            <p class="report-date">Generado el: ${formatDate(Date.now())}</p>
+            ${reportHtml}
+            <div style="margin-top: 50px; text-align: center; font-size: 9px; color: #9ca3af;">
+                <p>Sistema de Gestión de Activos - Reporte Confidencial</p>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
 
 // -------------------------------------------------------------------
-// COMPONENTE INTERNO: UserItem (Ahora solo muestra al usuario creado)
+// COMPONENTE INTERNO: UserItem (Se mantiene)
 // -------------------------------------------------------------------
 
 interface UserItemProps {
   reportItem: UserCreationReport;
 }
 
-// Usamos memo para optimizar la renderización de ítems en la lista
 const UserItem: React.FC<UserItemProps> = React.memo(({ reportItem }) => {
   const { user } = reportItem;
   
-  // El color indica si el usuario creado es Admin o User
   const iconColor = user.role === 'admin' ? '#3b82f6' : '#1f2937';
   
   return (
@@ -60,6 +176,9 @@ const UserCreationReportTab: React.FC = () => {
   // Consumimos el estado pre-calculado y el loading específico
   const { userCreationReport, loadingUserCreationReport } = useReports(); 
   
+  // <--- AGREGADO: Integrar hook de PDF --->
+  const { generatePdf, loading: loadingPdf, error: pdfError } = usePdfGenerator();
+
   // 1. AGRUPACIÓN: Transformamos la lista plana en secciones agrupadas
   const groupedReport = useMemo<CreatorSection[]>(() => {
     if (!userCreationReport || userCreationReport.length === 0) return [];
@@ -76,7 +195,7 @@ const UserCreationReportTab: React.FC = () => {
 
     // 2. Convertir el mapa de grupos en un array de secciones para SectionList
     return Object.keys(groupedMap)
-        .sort() // Opcional: ordenar los creadores alfabéticamente
+        .sort() 
         .map(creatorName => ({
             title: creatorName,
             data: groupedMap[creatorName],
@@ -84,12 +203,40 @@ const UserCreationReportTab: React.FC = () => {
 
   }, [userCreationReport]);
 
+    // Función para manejar la generación del PDF
+    const handleGeneratePdf = async () => {
+        if (groupedReport.length === 0) {
+            Alert.alert('Advertencia', 'No hay datos en el reporte para generar el PDF.');
+            return;
+        }
+        
+        // Generar el contenido HTML usando la función auxiliar
+        const htmlContent = generateUserCreationReportHtml(groupedReport);
+
+        // Llamar al hook de generación de PDF
+        const result = await generatePdf(htmlContent, `Reporte_Usuarios_Creados_${Date.now()}`);
+
+        if (result && result.filePath) {
+            Alert.alert(
+                'Éxito', 
+                `PDF guardado exitosamente en la carpeta de Descargas/Documentos: ${result.filePath}`
+            );
+        } else if (pdfError) {
+            Alert.alert('Error', `Fallo al generar el PDF: ${pdfError}`);
+        } else {
+            Alert.alert('Error', 'Fallo desconocido al generar el PDF.');
+        }
+    };
+
+
   // 2. Renderizado de estado de carga
-  if (loadingUserCreationReport) {
+  if (loadingUserCreationReport || loadingPdf) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1f2937" />
-        <Text style={styles.loadingText}>Calculando reporte de usuarios...</Text>
+        <Text style={styles.loadingText}>
+            {loadingPdf ? 'Generando PDF...' : 'Calculando reporte de usuarios...'}
+        </Text>
       </View>
     );
   }
@@ -139,7 +286,7 @@ const UserCreationReportTab: React.FC = () => {
           shadowRadius: 3,
           elevation: 5,
         }}
-        onPress={() => console.log('Botón presionado')}
+        onPress={handleGeneratePdf} // <--- LLAMADA A LA FUNCIÓN DE GENERACIÓN
       >
         <Icon name="bar-chart-outline" size={28} color="#fff" />
       </TouchableOpacity>

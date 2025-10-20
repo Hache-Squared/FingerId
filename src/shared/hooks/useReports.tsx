@@ -38,6 +38,7 @@ export interface UserCreationReport {
 }
 
 // 4 & 5. REPORTE DE MANTENIMIENTOS ENRIQUECIDO (ORIGINAL)
+// NOTA: No agregamos el progressLog aquí para mantener compatibilidad con reportes 4 y 5
 export interface EnrichedMaintenanceReport {
     maintenanceId: string;
     assetName: string; // Nombre del equipo
@@ -68,6 +69,8 @@ export interface MaintenanceLogExtended {
 
 // Mantenimiento Enriquecido extendido con logs para la UI
 export interface MaintenanceExtended {
+    assetName: string; // <--- AGREGAR: Nombre del equipo
+    assetId: string;
     maintenanceId: string;
     title: string; // Título del mantenimiento
     status: MaintenanceStatus;
@@ -91,10 +94,10 @@ export interface AssetMaintenanceGroup {
 // --- INTERFACES AGREGADAS PARA REPORTE AGRUPADO POR PERFORMER (Reporte 7) ---
 // ==========================================================
 
-// Usamos EnrichedMaintenanceReport porque ya contiene assetName/Id, y es lo que devuelve el auxiliar base.
+// MODIFICADO: Usamos MaintenanceExtended que ya contiene todos los datos enriquecidos y logs.
 export interface PerformerMaintenanceGroup {
     performerName: string; // Nombre del Administrador/Usuario que cerró el mantenimiento
-    performedMaintenances: EnrichedMaintenanceReport[];
+    performedMaintenances: MaintenanceExtended[]; // <--- MODIFICADO
 }
 
 
@@ -375,6 +378,8 @@ export const useReports = () => {
             maintenanceId: maintenance.maintenanceId,
             title: maintenance.title,
             status: maintenance.status,
+            assetName, // <--- AGREGAR
+            assetId: maintenance.assetId,
             performedByAdminName: adminName,
             requestedBy: getFullName(maintenance.requestedByUid) ?? "",
             requestDate: maintenance.requestDate,
@@ -423,24 +428,38 @@ export const useReports = () => {
 
     /**
      * 7. FUNCIÓN DE CÁLCULO: REPORTE DE MANTENIMIENTOS POR ADMINISTRADOR QUE LO REALIZÓ (CERRÓ)
+     * MODIFICADO: Ahora usa toMaintenanceExtended para obtener los logs.
      */
     const generateMaintenanceReportByPerformerGroup = async (assetsList: Asset[]): Promise<PerformerMaintenanceGroup[]> => {
         const allMaintenance = await fetchAllMaintenance(); 
-        // Usamos la función original de enriquecimiento (4&5) que devuelve assetName y assetId
-        const enrichedMaintenanceList = enrichMaintenanceData(allMaintenance, assetsList);
+
+        // 1. Crear un mapa de AssetId a Asset
+        const assetMap = assetsList.reduce((acc, a) => {
+            acc[a.assetId] = a;
+            return acc;
+        }, {} as Record<string, Asset>);
         
-        // 1. Agrupar por el nombre del administrador (adminName)
-        const performerMap = enrichedMaintenanceList.reduce((acc, m) => {
-            // Solo agrupamos los que fueron cerrados (adminName !== 'Pendiente')
-            if (m.adminName === 'Pendiente') return acc;
+        // 2. Convertir todos los mantenimientos a MaintenanceExtended (incluyendo logs)
+        const extendedMaintenanceList: MaintenanceExtended[] = allMaintenance
+            .map(m => {
+                const asset = assetMap[m.assetId];
+                const assetName = asset?.asset_name || `Activo Desconocido (${m.assetId})`;
+                return toMaintenanceExtended(m, assetName); // Usamos la utilidad que ya tiene logs
+            })
+            .filter(m => m.status === 'FINALIZED' || m.status === 'DELIVERED' || m.status === 'CANCELLED'); // Solo mantenimientos cerrados
+        
+        // 3. Agrupar por el nombre del administrador que CERRÓ (performedByAdminName)
+        const performerMap = extendedMaintenanceList.reduce((acc, m) => {
+            const performerName = m.performedByAdminName;
+            // Solo incluimos si hay un nombre de performer (no 'Pendiente')
+            if (performerName === 'Pendiente') return acc;
             
-            const performerName = m.adminName;
             if (!acc[performerName]) acc[performerName] = [];
             acc[performerName].push(m); 
             return acc;
-        }, {} as Record<string, EnrichedMaintenanceReport[]>);
+        }, {} as Record<string, MaintenanceExtended[]>); // Nota: El tipo de acumulador es MaintenanceExtended[]
 
-        // 2. Convertir el mapa a un array de PerformerMaintenanceGroup
+        // 4. Convertir el mapa a un array de PerformerMaintenanceGroup
         return Object.keys(performerMap)
             .map(performerName => ({
                 performerName,

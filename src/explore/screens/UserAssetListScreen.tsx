@@ -128,7 +128,11 @@ const UserAssetListScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const renderItem = ({ item }: { item: AssignedAssetDetails }) => (
-    <View className="p-4 mb-3 bg-white rounded-xl shadow-md border border-gray-100 flex-row justify-between items-center">
+    <TouchableOpacity
+    onPress={() => navigation.navigate("AssetDetailScreen", {
+      assetId: item.assetId
+    })}
+    className="p-4 mb-3 bg-white rounded-xl shadow-md border border-gray-100 flex-row justify-between items-center">
       <View className='flex-1 pr-3'>
         <Text className="text-lg font-bold text-gray-900">{item.asset.asset_name}</Text>
         <Text className="text-sm text-gray-600">ID: {item.assetId}</Text>
@@ -141,7 +145,7 @@ const UserAssetListScreen: React.FC<Props> = ({ navigation }) => {
       >
         <Icon name='trash-outline' size={24} color="#fff" />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
 

@@ -9,10 +9,16 @@ import {
   LayoutAnimation,
   Platform, 
   UIManager,
+  Alert, // Para mostrar mensajes de éxito/error
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+
+// Importación del hook y tipos
 import { useReports, AssetLogReport } from '../../../shared/hooks/useReports'; 
 import { AssetLogEntry } from '../../../types/Asset.types'; 
+
+// Importación del hook de generación de PDF
+import { usePdfGenerator } from '../../../shared/hooks/usePdfGenerator'; // Asegúrate de ajustar la ruta
 
 // Habilitar LayoutAnimation
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -20,7 +26,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 // ===================================================================
-// UTILITY: FORMATO DE FECHA
+// UTILITY: FORMATO DE FECHA (Se mantiene)
 // ===================================================================
 const formatDateAndTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -33,16 +39,130 @@ const formatDateAndTime = (timestamp: number) => {
     });
 };
 
+// ===================================================================
+// FUNCIÓN AUXILIAR: GENERACIÓN DE HTML para PDF (MODIFICADA A TABLA)
+// ===================================================================
+
+/**
+ * Genera el string HTML para el reporte de Logs de Activos usando tablas.
+ */
+const generateAssetLogHtml = (reportData: AssetLogReport[]): string => {
+    // Definir estilos para el PDF, enfocados en tablas
+    const styles = `
+        <style>
+            body { font-family: sans-serif; margin: 20px; font-size: 10px; }
+            h1 { color: #1f2937; text-align: center; margin-bottom: 20px; font-size: 18px; }
+            .report-date { text-align: center; color: #6b7280; margin-bottom: 30px; font-size: 11px; }
+            
+            /* Estilos de Tarjeta de Activo */
+            .asset-card { margin-bottom: 30px; border: 1px solid #e5e7eb; border-left: 5px solid #1f2937; padding: 15px; border-radius: 5px; page-break-inside: avoid; }
+            .asset-name { font-weight: bold; font-size: 14px; color: #1f2937; margin-bottom: 3px; }
+            .asset-detail { font-size: 11px; color: #6b7280; }
+            .assignment-status { font-size: 12px; font-weight: 600; padding: 5px 0; border-bottom: 1px solid #e5e7eb; margin: 10px 0 15px 0; }
+            
+            /* Estilos de Tabla de Logs */
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; vertical-align: top; }
+            th { background-color: #f3f4f6; color: #1f2937; font-weight: 700; font-size: 11px; }
+            
+            /* Colores de las celdas de Acción */
+            .action-assigned { background-color: #d1fae5; color: #065f46; font-weight: 700; }
+            .action-unassigned { background-color: #fef3c7; color: #92400e; font-weight: 700; }
+            .action-maintenance { background-color: #dbeafe; color: #1e40af; font-weight: 700; }
+            .action-created { background-color: #ede9fe; color: #5b21b6; font-weight: 700; }
+            
+            .empty { color: #9ca3af; text-align: center; font-style: italic; padding: 10px; border: 1px solid #e5e7eb; }
+        </style>
+    `;
+    
+    // Función para obtener la clase CSS basada en la acción
+    const logActionToClass = (action: string) => {
+        switch (action) {
+            case 'ASSIGNED': return 'action-assigned';
+            case 'UNASSIGNED': return 'action-unassigned';
+            case 'MAINTENANCE': return 'action-maintenance';
+            case 'CREATED': return 'action-created';
+            default: return '';
+        }
+    };
+
+    // Mapeo de la data a elementos HTML
+    const reportHtml = reportData.map(report => {
+        const logCount = report.logs.length;
+        const assignedColor = report.asset.is_assigned ? '#10b981' : '#f59e0b';
+        
+        // Contenido de la tabla de Logs
+        const logsTableBody = logCount > 0
+            ? report.logs.map((log: AssetLogEntry) => `
+                <tr>
+                    <td>${formatDateAndTime(log.timestamp)}</td>
+                    <td class="${logActionToClass(log.action)}">${log.action.replace('_', ' ')}</td>
+                    <td>${log.details}</td>
+                </tr>
+              `).join('')
+            : `<tr><td colspan="3" class="empty">No hay historial de logs para mostrar.</td></tr>`;
+
+        // Estructura de la tabla completa
+        const logsHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Fecha y Hora</th>
+                        <th style="width: 20%;">Acción</th>
+                        <th style="width: 55%;">Detalles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${logsTableBody}
+                </tbody>
+            </table>
+        `;
+
+        // Tarjeta de Activo
+        return `
+            <div class="asset-card" style="border-left-color: ${assignedColor};">
+                <p class="asset-name">
+                    ${report.asset.asset_name}
+                </p>
+                <p class="asset-detail">ID: ${report.asset.assetId} | SN: ${report.asset.serial_number || 'N/A'}</p>
+                
+                <p class="assignment-status">
+                    ${report.asset.is_assigned 
+                        ? `Asignado a: ${report.currentAssigneeName || 'N/A'}` 
+                        : 'Actualmente sin asignar'}
+                </p>
+                
+                ${logsHtml}
+            </div>
+        `;
+    }).join('');
+
+    // Estructura HTML final
+    return `
+        <html>
+        <head>${styles}</head>
+        <body>
+            <h1>REPORTE DE LOG DE TODOS LOS EQUIPOS</h1>
+            <p class="report-date">Generado el: ${formatDateAndTime(Date.now())}</p>
+            ${reportHtml}
+            <div style="margin-top: 50px; text-align: center; font-size: 9px; color: #9ca3af;">
+                <p>Sistema de Gestión de Activos - Reporte Confidencial</p>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
+
 // -------------------------------------------------------------------
 // COMPONENTE INTERNO: LogItem (Se mantiene)
 // -------------------------------------------------------------------
-
+// ... (El componente LogItem se mantiene sin cambios) ...
 interface LogItemProps {
     log: AssetLogEntry;
 }
 
 const LogItem: React.FC<LogItemProps> = React.memo(({ log }) => {
-    // Definir estilos basados en el tipo de acción
     const actionStyle = useMemo(() => {
         switch (log.action) {
             case 'ASSIGNED':
@@ -66,17 +186,17 @@ const LogItem: React.FC<LogItemProps> = React.memo(({ log }) => {
                     {log.action.replace('_', ' ')}
                     <Text style={styles.logTimestamp}> ({formatDateAndTime(log.timestamp)})</Text>
                 </Text>
-                {/* Usamos 'message' en lugar de 'details' que es más común en logs */}
                 <Text style={styles.logMessage}>{log.details}</Text> 
             </View>
         </View>
     );
 });
 
-// -------------------------------------------------------------------
-// COMPONENTE INTERNO: AssetLogCard (Nuevo: Tarjeta por Equipo)
-// -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+// COMPONENTE INTERNO: AssetLogCard (Se mantiene)
+// -------------------------------------------------------------------
+// ... (El componente AssetLogCard se mantiene sin cambios) ...
 interface AssetLogCardProps {
     report: AssetLogReport;
 }
@@ -146,8 +266,9 @@ const AssetLogCard: React.FC<AssetLogCardProps> = ({ report }) => {
     );
 };
 
+
 // -------------------------------------------------------------------
-// COMPONENTE PRINCIPAL: AssetLogReportTab
+// COMPONENTE PRINCIPAL: AssetLogReportTab (Se mantiene la lógica de PDF)
 // -------------------------------------------------------------------
 
 const AssetLogReportTab: React.FC = () => {
@@ -157,12 +278,43 @@ const AssetLogReportTab: React.FC = () => {
     loadingAllAssetLogReports,
   } = useReports(); 
   
-  // 1. Renderizado de carga
-  if (loadingAllAssetLogReports) {
+  // Integrar hook de PDF
+  const { generatePdf, loading: loadingPdf, error: pdfError } = usePdfGenerator();
+  
+  // Función para manejar la generación del PDF
+  const handleGeneratePdf = async () => {
+    if (allAssetLogReports.length === 0) {
+        Alert.alert('Advertencia', 'No hay datos en el reporte para generar el PDF.');
+        return;
+    }
+    
+    // Generar el contenido HTML usando la función auxiliar (MODIFICADA ARRIBA)
+    const htmlContent = generateAssetLogHtml(allAssetLogReports);
+
+    // Llamar al hook de generación de PDF
+    const result = await generatePdf(htmlContent, `Log_Equipos_${Date.now()}`);
+
+    if (result && result.filePath) {
+        Alert.alert(
+            'Éxito', 
+            `PDF guardado exitosamente en la carpeta de Descargas/Documentos: ${result.filePath}`
+        );
+    } else if (pdfError) {
+        Alert.alert('Error', `Fallo al generar el PDF: ${pdfError}`);
+    } else {
+        Alert.alert('Error', 'Fallo desconocido al generar el PDF.');
+    }
+  };
+
+
+  // 1. Renderizado de carga (MODIFICADO para incluir loadingPdf)
+  if (loadingAllAssetLogReports || loadingPdf) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#1f2937" />
-        <Text style={styles.loadingText}>Cargando logs de activos...</Text>
+        <Text style={styles.loadingText}>
+            {loadingPdf ? 'Generando PDF...' : 'Cargando logs de activos...'}
+        </Text>
       </View>
     );
   }
@@ -207,7 +359,7 @@ const AssetLogReportTab: React.FC = () => {
           shadowRadius: 3,
           elevation: 5,
         }}
-        onPress={() => console.log('Botón presionado')}
+        onPress={handleGeneratePdf} // LLAMADA A LA FUNCIÓN DE GENERACIÓN
       >
         <Icon name="bar-chart-outline" size={28} color="#fff" />
       </TouchableOpacity>

@@ -6,9 +6,10 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { useUsers, UserRole } from '../../shared/hooks/useUsers';
-import { Dropdown } from 'react-native-element-dropdown'; // Usaremos Dropdown simple para el rol
-import { useUserProfile } from '../../shared/hooks/useUserProfile'; // Para obtener el UID actual
+// MODIFICADO: Importamos el tipo UserRole y UserProfileData para el tipado
+import { useUsers, UserRole, ReportKey } from '../../shared/hooks/useUsers'; 
+import { Dropdown } from 'react-native-element-dropdown'; 
+import { useUserProfile } from '../../shared/hooks/useUserProfile'; 
 
 // Opciones de Rol para el Dropdown
 const roleOptions = [
@@ -24,10 +25,20 @@ const departmentOptions = [
   { label: 'Recursos Humanos', value: 'HR' },
 ];
 
+// AGREGADO: Lista de reportes para los checkboxes
+const REPORT_OPTIONS: { key: ReportKey; label: string }[] = [
+  { key: 'ASSIGNMENT', label: 'Reporte de Asignaciones' },
+  { key: 'ASSET_LOG', label: 'Reporte de Logs de Equipo' },
+  { key: 'USER_CREATION', label: 'Reporte de Creación Usuarios' },
+  { key: 'MAINT_ASSET', label: 'Reporte de Mantenimiento por Equipo' },
+  { key: 'MAINT_ADMIN', label: 'Reporte de Mantenimiento por Admin' },
+];
+
 const RegisterUserScreen: FC = () => {
   const navigation = useNavigation();
   const { registerUser, loading: usersLoading, error: usersError } = useUsers();
   const { userInfo } = useUserProfile();
+  
   // Estados del formulario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,12 +46,19 @@ const RegisterUserScreen: FC = () => {
   const [lastName, setLastName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [department, setDepartment] = useState(departmentOptions[0].value);
-  const [role, setRole] = useState<UserRole>(roleOptions[1].value as UserRole); // Por defecto: User
+  const [role, setRole] = useState<UserRole>(roleOptions[1].value as UserRole); 
+  
+  // AGREGADO: Estados para los permisos de reportes
+  const [canCreateUsers, setcanCreateUsers] = useState(false);
+  const [canViewReports, setCanViewReports] = useState(false);
+  const [specificReportPermissions, setSpecificReportPermissions] = useState<Record<string, boolean>>(() => 
+    REPORT_OPTIONS.reduce((acc, curr) => ({ ...acc, [curr.key]: false }), {})
+  );
 
-  // Eliminamos lógica antigua de 'typeOfForm' y 'photo'
   const typeOfForm = 'register'; 
 
   const validateFields = () => {
+    // ... lógica de validación existente
     if (!firstName || !lastName || !email || !password || !employeeId) {
       Alert.alert('Error', 'Todos los campos de Nombre, Apellido, Correo, Contraseña y Matrícula son obligatorios.');
       return false;
@@ -49,20 +67,26 @@ const RegisterUserScreen: FC = () => {
       Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
       return false;
     }
-    // Añadir validación de correo más estricta si es necesario
     return true;
   };
 
   const handleRegisterUser = async () => {
     if (!validateFields()) return;
 
+    // MODIFICADO: Ahora incluimos los permisos en profileData
     const profileData = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       employeeId: employeeId.trim(),
       department: department,
       role: role,
-      createdByUid: userInfo?.uid ?? "Admin"
+      createdByUid: userInfo?.uid ?? "Admin",
+      // AGREGADO: Estructura de permisos
+      permissions: {
+        canViewReports: canViewReports,
+        canCreateUsers: canCreateUsers,
+        specificReports: specificReportPermissions as Record<ReportKey, boolean>,
+      }
     };
 
     const newUid = await registerUser(email.trim(), password.trim(), profileData);
@@ -92,7 +116,8 @@ const RegisterUserScreen: FC = () => {
 
         <View className='w-full p-4'>
             
-            {/* Campos de Nombre y Apellido */}
+            {/* Campos de Nombre, Apellido, Correo, Contraseña, Matrícula, Departamento y Rol... (SIN CAMBIOS) */}
+            {/* ... */}
             <View className='flex-row space-x-3 mb-3'>
                 <View style={styles.inputGroup} className='flex-1'>
                     <Text style={styles.label}>Nombre:</Text>
@@ -114,7 +139,6 @@ const RegisterUserScreen: FC = () => {
                 </View>
             </View>
 
-            {/* Correo y Contraseña */}
             <View style={styles.inputGroup}>
                 <Text style={styles.label}>Correo Electrónico:</Text>
                 <TextInput
@@ -137,7 +161,6 @@ const RegisterUserScreen: FC = () => {
                 />
             </View>
             
-            {/* Matrícula / ID de Empleado */}
             <View style={styles.inputGroup}>
                 <Text style={styles.label}>Matrícula / ID de Empleado:</Text>
                 <TextInput
@@ -150,7 +173,6 @@ const RegisterUserScreen: FC = () => {
                 />
             </View>
 
-            {/* Departamento (Dropdown) */}
             <View style={styles.inputGroup}>
                 <Text style={styles.label}>Departamento:</Text>
                 <Dropdown
@@ -172,7 +194,6 @@ const RegisterUserScreen: FC = () => {
                 />
             </View>
 
-            {/* Rol (Dropdown) */}
             <View style={styles.inputGroup}>
                 <Text style={styles.label}>Rol de Acceso:</Text>
                 <Dropdown
@@ -194,6 +215,75 @@ const RegisterUserScreen: FC = () => {
                 />
             </View>
             
+            {/* ======================================= */}
+            {/* AGREGADO: PERMISOS DE REPORTES SECTION */}
+            {/* ======================================= */}
+
+            <View style={styles.sectionHeader}>
+                <Icon name="stats-chart-outline" size={20} color="#1f2937" />
+                <Text style={styles.sectionTitle}>Permisos:</Text>
+            </View>
+            {/* Toggle Principal: Habilitar Reportes */}
+            <View style={[styles.switchRow, {marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 10}]}>
+                <Text style={[styles.label, {marginBottom: 0}]}>Habilitar acceso a Crear Usuarios:</Text>
+                <TouchableOpacity
+                    style={[styles.switchContainer, canCreateUsers ? styles.switchActive : styles.switchInactive]}
+                    onPress={() => {
+                        setcanCreateUsers(!canCreateUsers);
+                    }}
+                >
+                    <View style={[styles.switchHandle, canCreateUsers ? styles.handleActive : styles.handleInactive]} />
+                </TouchableOpacity>
+            </View>
+
+            {/* Toggle Principal: Habilitar Reportes */}
+            <View style={[styles.switchRow, {marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 10}]}>
+                <Text style={[styles.label, {marginBottom: 0}]}>Habilitar acceso a Reportes:</Text>
+                <TouchableOpacity
+                    style={[styles.switchContainer, canViewReports ? styles.switchActive : styles.switchInactive]}
+                    onPress={() => {
+                        setCanViewReports(!canViewReports);
+                        // Opcional: Deseleccionar todos si se deshabilita el acceso general
+                        if (canViewReports) {
+                            setSpecificReportPermissions(REPORT_OPTIONS.reduce((acc, curr) => ({ ...acc, [curr.key]: false }), {}));
+                        }
+                    }}
+                >
+                    <View style={[styles.switchHandle, canViewReports ? styles.handleActive : styles.handleInactive]} />
+                </TouchableOpacity>
+            </View>
+
+            {/* Lista de Checkboxes de Reportes */}
+            {canViewReports && (
+                <View style={styles.reportsListContainer}>
+                    <Text style={{fontSize: 14, color: '#4b5563', fontWeight: '600', marginBottom: 8}}>Reportes específicos:</Text>
+                    {REPORT_OPTIONS.map(report => (
+                        <TouchableOpacity
+                            key={report.key}
+                            style={styles.checkboxRow}
+                            onPress={() => 
+                                setSpecificReportPermissions(prev => ({
+                                    ...prev,
+                                    [report.key]: !prev[report.key],
+                                }))
+                            }
+                        >
+                            <View 
+                                style={[
+                                    styles.checkbox, 
+                                    specificReportPermissions[report.key] ? styles.checkboxChecked : styles.checkboxUnchecked
+                                ]}
+                            >
+                                {specificReportPermissions[report.key] && (
+                                    <Icon name="checkmark" size={14} color="#fff" />
+                                )}
+                            </View>
+                            <Text style={styles.checkboxLabel}>{report.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+
             {/* Botón de Registro */}
             <TouchableOpacity 
                 onPress={handleRegisterUser} 
@@ -221,6 +311,7 @@ const RegisterUserScreen: FC = () => {
   );
 };
 
+// ESTILOS ADICIONALES PARA LA PANTALLA DE REGISTRO
 const styles = StyleSheet.create({
   container: {
     paddingBottom: 40,
@@ -262,7 +353,6 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
     elevation: 1,
   },
-  // Estilos específicos para Dropdown (react-native-element-dropdown)
   dropdown: {
     height: 50,
     borderColor: '#d1d5db',
@@ -285,6 +375,94 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color:"#111"
   },
+  // --- ESTILOS AGREGADOS PARA PERMISOS ---
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 15,
+    paddingBottom: 5,
+    borderBottomWidth: 2,
+    borderBottomColor: '#6366f1', // Indigo 500
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginLeft: 10,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  // Estilos Toggle (Switch)
+  switchContainer: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    padding: 2,
+  },
+  switchActive: {
+    backgroundColor: '#3b82f6', // Azul más fuerte
+  },
+  switchInactive: {
+    backgroundColor: '#ccc',
+  },
+  switchHandle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  handleActive: {
+    transform: [{ translateX: 22 }],
+  },
+  handleInactive: {
+    transform: [{ translateX: 0 }],
+  },
+  // Estilos Checkbox
+  reportsListContainer: {
+    marginTop: 5,
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  checkboxUnchecked: {
+    borderColor: '#9ca3af',
+    backgroundColor: 'white',
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    color: '#374151',
+  }
 });
 
 export { RegisterUserScreen };

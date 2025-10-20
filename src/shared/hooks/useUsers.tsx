@@ -25,6 +25,18 @@ const USER_PROFILES_RTDB_PATH = 'userProfiles';
 // --- Tipos ---
 export type UserRole = 'admin' | 'user';
 
+// AGREGADO: Tipos para los reportes
+export type ReportKey = 'ASSIGNMENT' | 'ASSET_LOG' | 'USER_CREATION' | 'MAINT_ASSET' | 'MAINT_ADMIN';
+
+// AGREGADO: Interfaz para la estructura de permisos
+export interface ReportPermissions {
+    // AGREGADO: Permiso para crear/registrar nuevos usuarios
+    canCreateUsers: boolean; // <<<<<<<< ESTO ES LO QUE SE AGREGA
+    canViewReports: boolean; // Control general (ver la pantalla de reportes)
+    specificReports: Record<ReportKey, boolean>; // Control específico por reporte
+}
+
+
 // Data extendida del perfil de usuario (se guarda en RTDB)
 export interface UserProfileData {
   uid: string; // ID de autenticación de Firebase
@@ -35,7 +47,8 @@ export interface UserProfileData {
   role: UserRole; // 'admin' o 'user'
   employeeId: string; // Número de empleado o matrícula
   createdByUid: string;
-  // Agrega otros campos de data que necesites
+  // AGREGADO: Permisos de reportes
+  permissions: ReportPermissions;
 }
 
 /**
@@ -55,6 +68,7 @@ export const useUsers = () => {
   const saveUserProfileData = useCallback(async (uid: string, data: Omit<UserProfileData, 'uid' | 'email'> & { email: string }) => {
     try {
       const profilePath = `${USER_PROFILES_RTDB_PATH}/${uid}`;
+      // NOTA: 'data' ahora incluye la propiedad 'permissions'
       await rtdbSet(rtdbRef(db, profilePath), {
         ...data,
         uid: uid,
@@ -73,6 +87,7 @@ export const useUsers = () => {
   const registerUser = useCallback(async (
     email: string, 
     password: string, 
+    // MODIFICADO: profileData ahora debe incluir los permisos
     profileData: Omit<UserProfileData, 'uid' | 'email'>
   ) => {
     setLoading(true);
@@ -139,7 +154,7 @@ export const useUsers = () => {
       if (snapshot.exists()) {
         return snapshot.val() as UserProfileData;
       }
-      return null;
+      return null; 
     } catch (err) {
       console.error("Error al obtener el perfil de usuario:", err);
       return null;
@@ -181,8 +196,8 @@ export const useUsers = () => {
     getUserProfile, 
     loading: loading || loadingUsers, 
     error,
-    allUsers, // <--- LISTA DE USUARIOS
-    fetchAllUsers, // <--- FUNCIÓN PARA CARGAR LA LISTA
+    allUsers, 
+    fetchAllUsers, 
     loadingUsers,
   };
 };

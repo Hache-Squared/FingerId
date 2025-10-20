@@ -56,13 +56,6 @@ const ADMIN_ACTIONS: ActionItem[] = [
     role: 'admin' 
   },
   { 
-    id: '2', 
-    iconName: 'person-add-outline', 
-    label: 'Registrar Usuario', 
-    action: (navigation) => navigation.navigate("Register", { typeOfForm: "register" }), 
-    role: 'admin' 
-  },
-  { 
     id: '3', 
     iconName: 'scan-circle-outline', 
     label: 'Escanear Equipo', 
@@ -88,13 +81,6 @@ const ADMIN_ACTIONS: ActionItem[] = [
     iconName: 'checkbox-outline', 
     label: 'Mantenimiento (Admin)', 
     action: (navigation) => navigation.navigate("AdminMaintenanceScreen"), 
-    role: 'admin' 
-  },
-  { 
-    id: '5', 
-    iconName: 'bar-chart-outline', 
-    label: 'Reportes', 
-    action: (navigation) => navigation.navigate("ReportsScreen"), 
     role: 'admin' 
   },
   { id: '7', iconName: 'cube-outline', label: 'Mis Equipos Asignados', action: (navigation) => navigation.navigate("MyAssignedAssetsScreen"), role: 'admin' },
@@ -219,16 +205,44 @@ const AdminScreen: React.FC = () => {
   };
 
   const availableActions = useMemo(() => {
-      const allActions = [...ADMIN_ACTIONS, ...USER_ACTIONS];
+      let allActions = [...ADMIN_ACTIONS, ...USER_ACTIONS];
       const role = userInfo?.role;
+
+      if(userInfo?.permissions?.canCreateUsers){
+        allActions.push(
+          { 
+            id: '2', 
+            iconName: 'person-add-outline', 
+            label: 'Registrar Usuario', 
+            action: (navigation) => navigation.navigate("Register", { typeOfForm: "register" }), 
+            role: 'admin' 
+          }
+        );
+      }
+
+      if(userInfo?.permissions?.canViewReports){
+        allActions.push(
+          { 
+            id: '5', 
+            iconName: 'bar-chart-outline', 
+            label: 'Reportes', 
+            action: (navigation) => navigation.navigate("ReportsScreen"), 
+            role: role ?? "user"
+          }
+        );
+      }
+      console.log({
+        actions: JSON.stringify(allActions),
+        userInfo: JSON.stringify(userInfo)
+      });
       
       if (role === 'admin') {
           return allActions.filter(action => action.role === 'admin');
       } else if (role === 'user') {
-          // Si es usuario, solo mostramos las acciones de usuario más Escanear Equipo
+          // El filtro ahora permitirá la acción de Reportes porque su rol será 'user'
           return allActions.filter(action => action.role === 'user' || action.id === '3');
       }
-      return []; 
+      return [];
   }, [userInfo?.role]);
 
   // Manejo de estados de carga

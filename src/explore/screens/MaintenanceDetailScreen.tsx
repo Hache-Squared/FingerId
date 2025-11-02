@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-
+import { useUsers } from '../../shared/hooks/useUsers';
 // Importación de Hooks y Tipos
 import { useMaintenance, MaintenanceStatus, Maintenance } from '../../shared/hooks/useMaintenance';
 import { useAssets } from '../../shared/hooks/useAssets';
@@ -72,6 +72,8 @@ const MaintenanceDetailScreen: React.FC = () => {
     const { getMaintenanceById, updateMaintenanceStatus, loading: loadingMaintenance } = useMaintenance();
     const { getAssetById, loading: loadingAssets } = useAssets();
 
+    const { fetchAllUsers, allUsers, loadingUsers } = useUsers(); 
+    
     const [maintenance, setMaintenance] = useState<Maintenance | null>(null);
     const [asset, setAsset] = useState<Asset | null>(null);
     const [statusMessage, setStatusMessage] = useState('');
@@ -87,6 +89,7 @@ const MaintenanceDetailScreen: React.FC = () => {
             maint
         });
         
+        await fetchAllUsers();
 
         if (maint) {
             const assetData = await getAssetById(maint.assetId);
@@ -96,6 +99,11 @@ const MaintenanceDetailScreen: React.FC = () => {
             setAsset(assetData);
         }
     }, [getMaintenanceById, getAssetById, maintenanceId]);
+
+    const getFullName = (uid: string): string => {
+        const user = allUsers.find(u => u.uid === uid);
+        return user ? `${user.firstName} ${user.lastName}` : `Usuario Desconocido (${uid})`;
+    };
 
     useEffect(() => {
         loadData();
@@ -220,7 +228,7 @@ const MaintenanceDetailScreen: React.FC = () => {
                             <Text style={styles.assetName}>{asset.asset_name}</Text>
                             <Text style={styles.assetDetail}>ID: {asset.assetId}</Text>
                             <Text style={styles.assetDetail}>Serie: {asset.serial_number}</Text>
-                            <Text style={styles.assetDetail}>Asignado a UID: {asset.current_user_uid || 'N/A'}</Text>
+                            <Text style={styles.assetDetail}>Asignado a: {getFullName(asset?.current_user_uid ?? "") || 'N/A'}</Text>
                         </>
                     ) : (
                         <Text style={styles.loadingText}>Cargando información del activo...</Text>

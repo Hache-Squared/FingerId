@@ -58,17 +58,32 @@ const RegisterUserScreen: FC = () => {
   const typeOfForm = 'register'; 
 
   const validateFields = () => {
-    // ... lógica de validación existente
+    // Validar campos vacíos
     if (!firstName || !lastName || !email || !password || !employeeId) {
       Alert.alert('Error', 'Todos los campos de Nombre, Apellido, Correo, Contraseña y Matrícula son obligatorios.');
       return false;
     }
-    if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+
+    // Validar formato de correo (regex simple y confiable)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Por favor ingrese un correo electrónico válido.');
       return false;
     }
+
+    // Validar contraseña (mínimo 6 caracteres y al menos una letra y un número)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    if (!passwordRegex.test(password)) {
+      Alert.alert(
+        'Error', 
+        'La contraseña debe tener al menos 6 caracteres, incluyendo al menos una letra y un número.'
+      );
+      return false;
+    }
+
     return true;
   };
+
 
   const handleRegisterUser = async () => {
     if (!validateFields()) return;
@@ -151,7 +166,7 @@ const RegisterUserScreen: FC = () => {
                 />
             </View>
             <View style={styles.inputGroup}>
-                <Text style={styles.label}>Contraseña Temporal:</Text>
+                <Text style={styles.label}>Contraseña:</Text>
                 <TextInput
                     style={styles.textInput}
                     value={password}

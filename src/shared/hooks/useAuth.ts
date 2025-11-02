@@ -66,6 +66,7 @@ export const useAuth = () => {
       }
     } catch (err: any) {
       console.error(err);
+      throw new Error('Fallo en la autenticación (ver errores de useUsers)'); 
     } finally {
       dispatch(setAuthLoading(false));
     }
@@ -82,7 +83,7 @@ export const useAuth = () => {
           employeeId: 'TEMP',
           department: 'TEMP',
           role: 'user'
-      });
+      } as any);
       
       if (uid) {
         // Como registerUser también es signInUser, el usuario ya está autenticado.

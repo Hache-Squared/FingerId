@@ -78,10 +78,9 @@ const AssetFormScreen: React.FC = () => {
     
     try {
       // 2. LLAMADA AL HOOK: Delegamos la lógica de guardado a useAssets
-      const newDocId = await createAsset(formData, userInfo.uid);
+      const newDocId = await createAsset(formData, userInfo.uid, userInfo);
       
       console.log("Nuevo Asset guardado con ID:", newDocId);
-      
       // 3. Feedback al usuario y navegación
       Alert.alert('Éxito', 'El equipo ha sido registrado exitosamente en el inventario.', [
         { text: 'OK', onPress: () => navigation.navigate("GenerateQrScreen",{

@@ -94,7 +94,9 @@ const MaintenanceListTab: React.FC<MaintenanceListTabProps> = ({ status, navigat
 
   // Filtrar los mantenimientos por el estado de la pestaña
   const filteredRequests = useMemo(() => {
-    return allMaintenanceRequests.filter(req => req.status === status);
+    let requests = allMaintenanceRequests.filter(req => req.status === status);
+    requests = requests?.sort((a, b) => b?.requestDate - a?.requestDate);
+    return requests;
   }, [allMaintenanceRequests, status]);
   
   // Renderizado del item de la lista

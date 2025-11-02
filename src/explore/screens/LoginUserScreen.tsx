@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Alert, Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useAppTheme } from '../../shared/hooks'
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../shared/hooks/useAuth';
@@ -14,9 +14,14 @@ const LoginUserScreen = () => {
 
 
   const handleAuth = async() => {
-    let _username = username?.trim();
-    let _password = password?.trim();
-    await signInWithEmail(_username, _password);
+    try {
+      let _username = username?.trim();
+      let _password = password?.trim();
+      await signInWithEmail(_username, _password);
+      
+    } catch (error) {
+      Alert.alert("Error", "Usuario y/o contraseña invalidos")
+    }
   }
 
   return (
@@ -25,12 +30,12 @@ const LoginUserScreen = () => {
           <Image source={Logo} style={styles.image} />
           <Text className='w-full text-center font-bold text-black text-2xl'>AssetTrack</Text>
           <View className='w-11/12 self-center  rounded-lg p-3'>
-            <Text className='font-bold text-lg text-black text-left'>Usuario:</Text>
+            <Text className='font-bold text-lg text-black text-left'>Correo:</Text>
             <TextInput
               className='w-full self-center shadow-md shadow-slate-300 p-1.5 rounded-lg  border-2 border-black text-center'
               style={{ height: 50, borderColor: 'gray', borderWidth: 1, color: primaryColor }}
               value={username}
-              placeholder='Nombre de usuario'
+              placeholder='Correo de usuario'
               placeholderTextColor={primaryColor}
               onChangeText={(text) => setUsername(text)}
               />

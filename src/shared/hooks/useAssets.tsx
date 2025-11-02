@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRealtimeFetch } from './useRealtimeFetch'; // Hook de bajo nivel para RTDB
 import { AssetFormData } from '../../explore/screens/AssetFormScreen'; 
 import { Asset, AssetLogEntry } from '../../types/Asset.types';
 import { getAuth } from 'firebase/auth'; 
+import { useUsers } from './useUsers';
+import { useUserProfile } from './useUserProfile';
 
 // Inicializamos Auth para obtener el UID de quien realiza la acción
 const auth = getAuth();
@@ -18,7 +20,6 @@ const ASSETS_RTDB_PATH = `inventory/assets`;
 export const useAssets = () => {
   // Definición del tipo base para la colección completa
   type AssetCollection = Record<string, Omit<Asset, 'assetId'>>;
-
   // useRealtimeFetch manejará la colección
   const { 
     fetchData, 
@@ -85,10 +86,12 @@ export const useAssets = () => {
       if (searchTerm) {
         const lowerSearch = searchTerm.toLowerCase();
         filteredAssets = filteredAssets.filter(a => 
-            (a.asset_name && a.asset_name.toLowerCase().includes(lowerSearch)) || 
-            (a.serial_number && a.serial_number.toLowerCase().includes(lowerSearch))
+            (a?.asset_name && a?.asset_name?.toLowerCase()?.includes(lowerSearch)) || 
+            (a?.serial_number && a?.serial_number?.toLowerCase()?.includes(lowerSearch))
         );
       }
+
+      filteredAssets = filteredAssets?.sort((a, b) => b?.created_at - a?.created_at);
       
       setAssets(filteredAssets);
     } catch (e) {
@@ -102,10 +105,16 @@ export const useAssets = () => {
   /**
    * Crea un nuevo activo en RTDB usando 'push'.
    */
-  const createAsset = useCallback(async (data: AssetFormData, createdByUid: string) => {
+  const createAsset = useCallback(async (data: AssetFormData, createdByUid: string, userData: any) => {
     setLocalLoading(true);
     try {
       // Data que se enviará al endpoint (un único objeto Asset sin ID)
+      let createdByName = `${userData?.firstName } ${userData?.lastName}`;
+      console.log({
+        createdByName,
+        userData
+      });
+      
       const assetDataForDb: Omit<Asset, 'assetId'> = {
         ...data,
         created_at: Date.now(), 
@@ -117,7 +126,7 @@ export const useAssets = () => {
              timestamp: Date.now(),
              action: 'CREATED',
              performedByUid: createdByUid,
-             details: `Asset creado por el usuario ${createdByUid}.`,
+             details: `Asset creado por el usuario: ${createdByName}.`,
         }],
       };
       

@@ -219,7 +219,7 @@ const UserCreationReportTab: React.FC = () => {
         if (result && result.filePath) {
             Alert.alert(
                 'Éxito', 
-                `PDF guardado exitosamente en la carpeta de Descargas/Documentos: ${result.filePath}`
+                `PDF guardado exitosamente en la carpeta de Descargas`
             );
         } else if (pdfError) {
             Alert.alert('Error', `Fallo al generar el PDF: ${pdfError}`);
